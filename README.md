@@ -205,6 +205,25 @@
     - [Amortized Analysis (Potential Method)](#amortized-analysis-potential-method)
     - [Custom Allocators (C++)](#custom-allocators-c)
   - [Summary: Master Map](#summary-master-map)
+- [DSA Black Hole](#dsa-black-hole)
+  - [1. Advanced Persistent Structures](#1-advanced-persistent-structures)
+    - [Persistent Segment Tree](#persistent-segment-tree)
+    - [Persistent Disjoint Set Union (DSU)](#persistent-disjoint-set-union-dsu)
+    - [Persistent Fenwick Tree](#persistent-fenwick-tree)
+  - [2. Heavy-Light Decomposition (HLD)](#2-heavy-light-decomposition-hld)
+  - [3. Mo's Algorithm](#3-mos-algorithm)
+  - [4. Suffix Array / Suffix Tree](#4-suffix-array--suffix-tree)
+  - [5. Advanced Graph Algorithms](#5-advanced-graph-algorithms)
+    - [Centroid Decomposition](#centroid-decomposition)
+    - [2-SAT with Kosaraju](#2-sat-with-kosaraju)
+  - [6. Number Theory Deep](#6-number-theory-deep)
+    - [Miller-Rabin Primality Test](#miller-rabin-primality-test)
+    - [Pollard's Rho Factorization](#pollards-rho-factorization)
+    - [Chinese Remainder Theorem (CRT)](#chinese-remainder-theorem-crt)
+  - [7. Range Query Data Structures](#7-range-query-data-structures)
+    - [Wavelet Tree](#wavelet-tree)
+  - [8. Polynomial Algorithms](#8-polynomial-algorithms)
+    - [Lagrange Interpolation](#lagrange-interpolation)
 
 ---
 
@@ -8092,6 +8111,2295 @@ These advanced topics form the complete DSA knowledge base:
 > "A person who never made a mistake never tried anything new." — Albert Einstein
 
 —✨ Keep coding, keep learning! ✨"
+
+# DSA Black Hole
+
+"Only the brave journey past the event horizon. These techniques are for those seeking total DSA mastery."
+
+---
+
+## 1. Advanced Persistent Structures
+
+Persistent data structures maintain version history, allowing queries against any past state after updates without copying entire structures.
+
+### Persistent Segment Tree
+
+A segment tree where each update creates a new version, with old versions remaining accessible. Uses structural sharing: only modified nodes are cloned.
+
+Basic Concept:
+- Each update creates a new tree node
+- Only path from leaf to root is copied
+- Previous tree nodes are reused
+- Space: O(log n) per update instead of O(n)
+
+Simple Implementation (Point Update, Range Query):
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct PersistentSegmentNode {
+    int val;
+    PersistentSegmentNode* left;
+    PersistentSegmentNode* right;
+    
+    PersistentSegmentNode() : val(0), left(nullptr), right(nullptr) {}
+    PersistentSegmentNode(int v) : val(v), left(nullptr), right(nullptr) {}
+};
+
+class PersistentSegmentTree {
+private:
+    vector<PersistentSegmentNode*> roots;
+    
+    PersistentSegmentNode* build(int l, int r) {
+        PersistentSegmentNode* node = new PersistentSegmentNode();
+        if (l == r) {
+            node->val = 0;
+            return node;
+        }
+        int mid = (l + r) / 2;
+        node->left = build(l, mid);
+        node->right = build(mid + 1, r);
+        node->val = node->left->val + node->right->val;
+        return node;
+    }
+    
+    PersistentSegmentNode* update(PersistentSegmentNode* node, int l, int r, 
+                                  int pos, int delta) {
+        PersistentSegmentNode* newNode = new PersistentSegmentNode();
+        
+        if (l == r) {
+            newNode->val = node->val + delta;
+            return newNode;
+        }
+        
+        int mid = (l + r) / 2;
+        if (pos <= mid) {
+            newNode->left = update(node->left, l, mid, pos, delta);
+            newNode->right = node->right;
+        } else {
+            newNode->left = node->left;
+            newNode->right = update(node->right, mid + 1, r, pos, delta);
+        }
+        
+        newNode->val = newNode->left->val + newNode->right->val;
+        return newNode;
+    }
+    
+    int query(PersistentSegmentNode* node, int l, int r, int ql, int qr) {
+        if (qr < l || ql > r) return 0;
+        if (ql <= l && r <= qr) return node->val;
+        
+        int mid = (l + r) / 2;
+        return query(node->left, l, mid, ql, qr) + 
+               query(node->right, mid + 1, r, ql, qr);
+    }
+    
+public:
+    PersistentSegmentTree(int n) {
+        roots.push_back(build(0, n - 1));
+    }
+    
+    void updateVersion(int pos, int delta, int n) {
+        roots.push_back(update(roots.back(), 0, n - 1, pos, delta));
+    }
+    
+    int queryVersion(int version, int l, int r, int n) {
+        return query(roots[version], 0, n - 1, l, r);
+    }
+    
+    int getVersionCount() {
+        return roots.size();
+    }
+};
+
+int main() {
+    int n = 5;
+    PersistentSegmentTree pst(n);
+    
+    pst.updateVersion(0, 5, n);  // Version 1: arr[0] = 5
+    pst.updateVersion(1, 3, n);  // Version 2: arr[1] = 3
+    pst.updateVersion(2, 7, n);  // Version 3: arr[2] = 7
+    
+    cout << "Query version 1, range [0,1]: " 
+         << pst.queryVersion(1, 0, 1, n) << endl;  // 5
+    cout << "Query version 2, range [0,1]: " 
+         << pst.queryVersion(2, 0, 1, n) << endl;  // 8
+    cout << "Query version 3, range [0,2]: " 
+         << pst.queryVersion(3, 0, 2, n) << endl;  // 15
+    
+    return 0;
+}
+```
+
+Intermediate: Historical Range Query
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct PSNode {
+    int sum;
+    PSNode* left;
+    PSNode* right;
+    PSNode() : sum(0), left(nullptr), right(nullptr) {}
+};
+
+class PersistentRangeQuery {
+private:
+    vector<PSNode*> roots;
+    int n;
+    
+    PSNode* build(vector<int>& arr, int l, int r) {
+        PSNode* node = new PSNode();
+        if (l == r) {
+            node->sum = arr[l];
+            return node;
+        }
+        int mid = (l + r) / 2;
+        node->left = build(arr, l, mid);
+        node->right = build(arr, mid + 1, r);
+        node->sum = node->left->sum + node->right->sum;
+        return node;
+    }
+    
+    PSNode* update(PSNode* old, int l, int r, int pos, int val) {
+        if (l == r) {
+            PSNode* newNode = new PSNode();
+            newNode->sum = val;
+            return newNode;
+        }
+        
+        PSNode* newNode = new PSNode();
+        int mid = (l + r) / 2;
+        
+        if (pos <= mid) {
+            newNode->left = update(old->left, l, mid, pos, val);
+            newNode->right = old->right;
+        } else {
+            newNode->left = old->left;
+            newNode->right = update(old->right, mid + 1, r, pos, val);
+        }
+        
+        newNode->sum = newNode->left->sum + newNode->right->sum;
+        return newNode;
+    }
+    
+    int query(PSNode* node, int l, int r, int ql, int qr) {
+        if (!node || qr < l || ql > r) return 0;
+        if (ql <= l && r <= qr) return node->sum;
+        
+        int mid = (l + r) / 2;
+        return query(node->left, l, mid, ql, qr) + 
+               query(node->right, mid + 1, r, ql, qr);
+    }
+    
+public:
+    PersistentRangeQuery(vector<int>& arr) : n(arr.size()) {
+        roots.push_back(build(arr, 0, n - 1));
+    }
+    
+    void update(int pos, int val) {
+        roots.push_back(update(roots.back(), 0, n - 1, pos, val));
+    }
+    
+    int query(int version, int l, int r) {
+        return query(roots[version], 0, n - 1, l, r);
+    }
+};
+
+int main() {
+    vector<int> arr = {1, 2, 3, 4, 5};
+    PersistentRangeQuery prq(arr);
+    
+    prq.update(0, 10);  // arr[0] = 10
+    cout << "Version 0, range [0,4]: " << prq.query(0, 0, 4) << endl;  // 15
+    cout << "Version 1, range [0,4]: " << prq.query(1, 0, 4) << endl;  // 24
+    
+    prq.update(2, 20);  // arr[2] = 20
+    cout << "Version 2, range [0,4]: " << prq.query(2, 0, 4) << endl;  // 41
+    
+    return 0;
+}
+```
+
+Advanced: Time Travel Queries
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+using namespace std;
+
+struct PersistentNode {
+    long long sum;
+    PersistentNode* left;
+    PersistentNode* right;
+    PersistentNode() : sum(0), left(nullptr), right(nullptr) {}
+};
+
+class TimeWarpSegmentTree {
+private:
+    vector<PersistentNode*> versions;
+    int n;
+    
+    PersistentNode* updateNode(PersistentNode* old, int l, int r, 
+                               int idx, long long val) {
+        if (!old) {
+            PersistentNode* node = new PersistentNode();
+            if (l == r) {
+                node->sum = val;
+            }
+            return node;
+        }
+        
+        PersistentNode* newNode = new PersistentNode();
+        
+        if (l == r) {
+            newNode->sum = val;
+            return newNode;
+        }
+        
+        int mid = (l + r) / 2;
+        if (idx <= mid) {
+            newNode->left = updateNode(old->left, l, mid, idx, val);
+            newNode->right = old->right;
+        } else {
+            newNode->left = old->left;
+            newNode->right = updateNode(old->right, mid + 1, r, idx, val);
+        }
+        
+        long long leftSum = newNode->left ? newNode->left->sum : 0;
+        long long rightSum = newNode->right ? newNode->right->sum : 0;
+        newNode->sum = leftSum + rightSum;
+        
+        return newNode;
+    }
+    
+    long long rangeQuery(PersistentNode* node, int l, int r, int ql, int qr) {
+        if (!node || qr < l || ql > r) return 0;
+        if (ql <= l && r <= qr) return node->sum;
+        
+        int mid = (l + r) / 2;
+        return rangeQuery(node->left, l, mid, ql, qr) + 
+               rangeQuery(node->right, mid + 1, r, ql, qr);
+    }
+    
+public:
+    TimeWarpSegmentTree(int size) : n(size) {
+        PersistentNode* root = new PersistentNode();
+        versions.push_back(root);
+    }
+    
+    void update(int idx, long long val) {
+        versions.push_back(updateNode(versions.back(), 0, n - 1, idx, val));
+    }
+    
+    long long queryAtTime(int timeVersion, int l, int r) {
+        return rangeQuery(versions[timeVersion], 0, n - 1, l, r);
+    }
+    
+    int getTotalVersions() {
+        return versions.size();
+    }
+};
+
+int main() {
+    TimeWarpSegmentTree tree(10);
+    
+    for (int i = 0; i < 5; i++) {
+        tree.update(i, i + 1);
+    }
+    
+    cout << "Query time 0, range [0,4]: " << tree.queryAtTime(0, 0, 4) << endl;
+    cout << "Query time 3, range [0,4]: " << tree.queryAtTime(3, 0, 4) << endl;
+    cout << "Query time 5, range [0,4]: " << tree.queryAtTime(5, 0, 4) << endl;
+    
+    return 0;
+}
+```
+
+Applications:
+- Undo/Redo in editors (query any historical state)
+- Time-based queries in versioned systems
+- Efficient backup without full cloning
+
+---
+
+### Persistent Disjoint Set Union (DSU)
+
+Maintains version history of union-find structure.
+
+Simple Implementation:
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct DSUNode {
+    int parent;
+    int rank;
+};
+
+class PersistentDSU {
+private:
+    vector<vector<DSUNode>> versions;
+    int n;
+    
+    int find(vector<DSUNode>& version, int x) {
+        if (version[x].parent != x) {
+            version[x].parent = find(version, version[x].parent);
+        }
+        return version[x].parent;
+    }
+    
+public:
+    PersistentDSU(int size) : n(size) {
+        vector<DSUNode> initial(n);
+        for (int i = 0; i < n; i++) {
+            initial[i].parent = i;
+            initial[i].rank = 0;
+        }
+        versions.push_back(initial);
+    }
+    
+    void unite(int x, int y) {
+        vector<DSUNode> newVersion = versions.back();
+        
+        int px = find(newVersion, x);
+        int py = find(newVersion, y);
+        
+        if (px == py) {
+            versions.push_back(newVersion);
+            return;
+        }
+        
+        if (newVersion[px].rank < newVersion[py].rank) {
+            newVersion[px].parent = py;
+        } else if (newVersion[px].rank > newVersion[py].rank) {
+            newVersion[py].parent = px;
+        } else {
+            newVersion[py].parent = px;
+            newVersion[px].rank++;
+        }
+        
+        versions.push_back(newVersion);
+    }
+    
+    int findAtVersion(int version, int x) {
+        int root = x;
+        while (versions[version][root].parent != root) {
+            root = versions[version][root].parent;
+        }
+        return root;
+    }
+    
+    bool connectedAtVersion(int version, int x, int y) {
+        return findAtVersion(version, x) == findAtVersion(version, y);
+    }
+    
+    int getTotalVersions() {
+        return versions.size();
+    }
+};
+
+int main() {
+    PersistentDSU pdsu(6);
+    
+    pdsu.unite(0, 1);  // Version 1
+    pdsu.unite(2, 3);  // Version 2
+    pdsu.unite(1, 2);  // Version 3
+    
+    cout << "Version 1 - 0 and 2 connected: " 
+         << (pdsu.connectedAtVersion(1, 0, 2) ? "Yes" : "No") << endl;
+    cout << "Version 3 - 0 and 3 connected: " 
+         << (pdsu.connectedAtVersion(3, 0, 3) ? "Yes" : "No") << endl;
+    
+    return 0;
+}
+```
+
+Intermediate: Link-Cut Trees Style
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <map>
+using namespace std;
+
+struct PersistentDSUState {
+    vector<int> parent;
+    vector<int> rank;
+    vector<int> size;
+    
+    PersistentDSUState(int n) : parent(n), rank(n, 0), size(n, 1) {
+        for (int i = 0; i < n; i++) {
+            parent[i] = i;
+        }
+    }
+};
+
+class VersionedDSU {
+private:
+    vector<PersistentDSUState> history;
+    int n;
+    
+    int find(PersistentDSUState& state, int x) {
+        if (state.parent[x] != x) {
+            state.parent[x] = find(state, state.parent[x]);
+        }
+        return state.parent[x];
+    }
+    
+public:
+    VersionedDSU(int size) : n(size) {
+        history.push_back(PersistentDSUState(n));
+    }
+    
+    void unionSets(int x, int y) {
+        PersistentDSUState newState = history.back();
+        
+        int px = find(newState, x);
+        int py = find(newState, y);
+        
+        if (px != py) {
+            if (newState.rank[px] < newState.rank[py]) {
+                newState.parent[px] = py;
+                newState.size[py] += newState.size[px];
+            } else if (newState.rank[px] > newState.rank[py]) {
+                newState.parent[py] = px;
+                newState.size[px] += newState.size[py];
+            } else {
+                newState.parent[py] = px;
+                newState.size[px] += newState.size[py];
+                newState.rank[px]++;
+            }
+        }
+        
+        history.push_back(newState);
+    }
+    
+    bool isConnected(int version, int x, int y) {
+        int rootX = x, rootY = y;
+        
+        while (history[version].parent[rootX] != rootX) {
+            rootX = history[version].parent[rootX];
+        }
+        
+        while (history[version].parent[rootY] != rootY) {
+            rootY = history[version].parent[rootY];
+        }
+        
+        return rootX == rootY;
+    }
+    
+    int getComponentSize(int version, int x) {
+        int root = x;
+        while (history[version].parent[root] != root) {
+            root = history[version].parent[root];
+        }
+        return history[version].size[root];
+    }
+};
+
+int main() {
+    VersionedDSU vdsu(7);
+    
+    vdsu.unionSets(0, 1);
+    vdsu.unionSets(2, 3);
+    vdsu.unionSets(4, 5);
+    vdsu.unionSets(1, 2);
+    
+    cout << "Version 0 - 0 and 1 connected: " 
+         << (vdsu.isConnected(0, 0, 1) ? "Yes" : "No") << endl;
+    cout << "Version 4 - 0 and 3 connected: " 
+         << (vdsu.isConnected(4, 0, 3) ? "Yes" : "No") << endl;
+    cout << "Version 4 - Component size of 0: " 
+         << vdsu.getComponentSize(4, 0) << endl;
+    
+    return 0;
+}
+```
+
+Use Cases:
+- Dynamic connectivity queries over time
+- Offline graph connectivity over versions
+
+---
+
+### Persistent Fenwick Tree
+
+Historical prefix sum queries.
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+class PersistentFenwick {
+private:
+    vector<vector<long long>> versions;
+    int n;
+    
+    void update(vector<long long>& tree, int idx, long long val) {
+        while (idx <= n) {
+            tree[idx] += val;
+            idx += idx & (-idx);
+        }
+    }
+    
+    long long query(const vector<long long>& tree, int idx) {
+        long long sum = 0;
+        while (idx > 0) {
+            sum += tree[idx];
+            idx -= idx & (-idx);
+        }
+        return sum;
+    }
+    
+public:
+    PersistentFenwick(int size) : n(size) {
+        versions.push_back(vector<long long>(n + 1, 0));
+    }
+    
+    void update(int idx, long long val) {
+        vector<long long> newVersion = versions.back();
+        update(newVersion, idx, val);
+        versions.push_back(newVersion);
+    }
+    
+    long long rangeQuery(int version, int l, int r) {
+        return query(versions[version], r) - 
+               (l > 1 ? query(versions[version], l - 1) : 0);
+    }
+    
+    long long prefixSum(int version, int idx) {
+        return query(versions[version], idx);
+    }
+};
+
+int main() {
+    PersistentFenwick pf(5);
+    
+    pf.update(1, 5);
+    pf.update(2, 3);
+    pf.update(3, 7);
+    
+    cout << "Version 0 prefix sum to 3: " << pf.prefixSum(0, 3) << endl;
+    cout << "Version 1 prefix sum to 3: " << pf.prefixSum(1, 3) << endl;
+    cout << "Version 3 range [1,3]: " << pf.rangeQuery(3, 1, 3) << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 2. Heavy-Light Decomposition (HLD)
+
+HLD decomposes a tree into disjoint chains, enabling path queries using segment trees or other RMQ structures.
+
+Core Concept:
+- Partition tree edges into heavy and light edges
+- Heavy edge: edge to subtree with more nodes
+- Light edge: all other edges
+- Any path has O(log n) light edges
+- Use segment trees on chains
+
+Simple Implementation (Path Maximum Query):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class HLD {
+private:
+    vector<vector<int>> adj;
+    vector<int> parent, depth, chainHead, pos;
+    vector<int> val;
+    int n, timer;
+    
+    int dfs_size(int u, int p) {
+        int size = 1;
+        for (int v : adj[u]) {
+            if (v != p) {
+                parent[v] = u;
+                depth[v] = depth[u] + 1;
+                size += dfs_size(v, u);
+            }
+        }
+        return size;
+    }
+    
+    void decompose(int u, int p, int head) {
+        chainHead[u] = head;
+        pos[u] = timer++;
+        
+        int heavyChild = -1, maxSize = 0;
+        for (int v : adj[u]) {
+            if (v != p) {
+                int size = dfs_size(v, u);
+                if (size > maxSize) {
+                    maxSize = size;
+                    heavyChild = v;
+                }
+            }
+        }
+        
+        if (heavyChild != -1) {
+            decompose(heavyChild, u, head);
+        }
+        
+        for (int v : adj[u]) {
+            if (v != p && v != heavyChild) {
+                decompose(v, u, v);
+            }
+        }
+    }
+    
+    void dfs_size_correct(int u, int p, vector<int>& subtreeSize) {
+        subtreeSize[u] = 1;
+        for (int v : adj[u]) {
+            if (v != p) {
+                dfs_size_correct(v, u, subtreeSize);
+                subtreeSize[u] += subtreeSize[v];
+            }
+        }
+    }
+    
+public:
+    HLD(int size) : n(size), timer(0) {
+        adj.resize(n);
+        parent.resize(n);
+        depth.resize(n, 0);
+        chainHead.resize(n);
+        pos.resize(n);
+        val.resize(n);
+    }
+    
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    void build() {
+        vector<int> subtreeSize(n);
+        dfs_size_correct(0, -1, subtreeSize);
+        
+        parent[0] = -1;
+        depth[0] = 0;
+        decompose(0, -1, 0);
+    }
+    
+    int lca(int u, int v) {
+        while (chainHead[u] != chainHead[v]) {
+            if (depth[chainHead[u]] > depth[chainHead[v]]) {
+                u = parent[chainHead[u]];
+            } else {
+                v = parent[chainHead[v]];
+            }
+        }
+        return depth[u] < depth[v] ? u : v;
+    }
+    
+    void updateNode(int u, int newVal) {
+        val[u] = newVal;
+    }
+    
+    int maxOnPath(int u, int v) {
+        int result = 0;
+        
+        while (chainHead[u] != chainHead[v]) {
+            if (depth[chainHead[u]] > depth[chainHead[v]]) {
+                // Process chain from u to chainHead[u]
+                for (int node = u; node != parent[chainHead[u]]; 
+                     node = parent[node]) {
+                    result = max(result, val[node]);
+                }
+                u = parent[chainHead[u]];
+            } else {
+                // Process chain from v to chainHead[v]
+                for (int node = v; node != parent[chainHead[v]]; 
+                     node = parent[node]) {
+                    result = max(result, val[node]);
+                }
+                v = parent[chainHead[v]];
+            }
+        }
+        
+        // Process remaining chain
+        if (depth[u] > depth[v]) swap(u, v);
+        for (int node = u; node != v; node = parent[node]) {
+            result = max(result, val[node]);
+        }
+        result = max(result, val[v]);
+        
+        return result;
+    }
+};
+
+int main() {
+    HLD hld(7);
+    
+    hld.addEdge(0, 1);
+    hld.addEdge(0, 2);
+    hld.addEdge(1, 3);
+    hld.addEdge(1, 4);
+    hld.addEdge(2, 5);
+    hld.addEdge(2, 6);
+    
+    hld.build();
+    
+    for (int i = 0; i < 7; i++) {
+        hld.updateNode(i, i + 1);
+    }
+    
+    cout << "Max on path 3 to 5: " << hld.maxOnPath(3, 5) << endl;
+    cout << "LCA of 3 and 6: " << hld.lca(3, 6) << endl;
+    
+    return 0;
+}
+```
+
+Intermediate: HLD with Segment Tree
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+struct SegmentTree {
+    vector<int> tree;
+    int n;
+    
+    SegmentTree(int size) : n(size) {
+        tree.assign(4 * n, 0);
+    }
+    
+    void update(int node, int start, int end, int idx, int val) {
+        if (start == end) {
+            tree[node] = val;
+        } else {
+            int mid = (start + end) / 2;
+            if (idx <= mid) {
+                update(2 * node, start, mid, idx, val);
+            } else {
+                update(2 * node + 1, mid + 1, end, idx, val);
+            }
+            tree[node] = max(tree[2 * node], tree[2 * node + 1]);
+        }
+    }
+    
+    int query(int node, int start, int end, int l, int r) {
+        if (r < start || end < l) return 0;
+        if (l <= start && end <= r) return tree[node];
+        
+        int mid = (start + end) / 2;
+        return max(query(2 * node, start, mid, l, r),
+                  query(2 * node + 1, mid + 1, end, l, r));
+    }
+};
+
+class HLDWithSegmentTree {
+private:
+    vector<vector<int>> adj;
+    vector<int> parent, depth, chainHead, pos, chainSize;
+    vector<SegmentTree*> chainTrees;
+    int n, timer;
+    
+    int dfs_size(int u, int p, vector<int>& subtreeSize) {
+        subtreeSize[u] = 1;
+        for (int v : adj[u]) {
+            if (v != p) {
+                parent[v] = u;
+                depth[v] = depth[u] + 1;
+                subtreeSize[u] += dfs_size(v, u, subtreeSize);
+            }
+        }
+        return subtreeSize[u];
+    }
+    
+    void decompose(int u, int p, int head, vector<int>& subtreeSize) {
+        chainHead[u] = head;
+        pos[u] = timer++;
+        
+        int heavyChild = -1, maxSize = 0;
+        for (int v : adj[u]) {
+            if (v != p && subtreeSize[v] > maxSize) {
+                maxSize = subtreeSize[v];
+                heavyChild = v;
+            }
+        }
+        
+        if (heavyChild != -1) {
+            decompose(heavyChild, u, head, subtreeSize);
+        }
+        
+        for (int v : adj[u]) {
+            if (v != p && v != heavyChild) {
+                decompose(v, u, v, subtreeSize);
+            }
+        }
+    }
+    
+public:
+    HLDWithSegmentTree(int size) : n(size), timer(0) {
+        adj.resize(n);
+        parent.assign(n, -1);
+        depth.assign(n, 0);
+        chainHead.resize(n);
+        pos.resize(n);
+        chainSize.resize(n, 0);
+    }
+    
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    void build() {
+        vector<int> subtreeSize(n);
+        dfs_size(0, -1, subtreeSize);
+        
+        parent[0] = -1;
+        depth[0] = 0;
+        decompose(0, -1, 0, subtreeSize);
+        
+        // Create segment trees for each chain
+        chainTrees.assign(n, nullptr);
+    }
+    
+    void updateNode(int u, int val) {
+        if (!chainTrees[chainHead[u]]) {
+            chainTrees[chainHead[u]] = new SegmentTree(n);
+        }
+        chainTrees[chainHead[u]]->update(1, 0, n - 1, pos[u], val);
+    }
+    
+    int queryPath(int u, int v) {
+        int result = 0;
+        
+        while (chainHead[u] != chainHead[v]) {
+            if (depth[chainHead[u]] > depth[chainHead[v]]) {
+                int chain = chainHead[u];
+                result = max(result, chainTrees[chain]->query(
+                    1, 0, n - 1, pos[chainHead[u]], pos[u]));
+                u = parent[chainHead[u]];
+            } else {
+                int chain = chainHead[v];
+                result = max(result, chainTrees[chain]->query(
+                    1, 0, n - 1, pos[chainHead[v]], pos[v]));
+                v = parent[chainHead[v]];
+            }
+        }
+        
+        if (depth[u] > depth[v]) swap(u, v);
+        int chain = chainHead[u];
+        result = max(result, chainTrees[chain]->query(
+            1, 0, n - 1, pos[u], pos[v]));
+        
+        return result;
+    }
+};
+
+int main() {
+    HLDWithSegmentTree hld(7);
+    
+    hld.addEdge(0, 1);
+    hld.addEdge(0, 2);
+    hld.addEdge(1, 3);
+    hld.addEdge(1, 4);
+    hld.addEdge(2, 5);
+    hld.addEdge(2, 6);
+    
+    hld.build();
+    
+    for (int i = 0; i < 7; i++) {
+        hld.updateNode(i, i + 1);
+    }
+    
+    cout << "Max on path 3 to 5: " << hld.queryPath(3, 5) << endl;
+    cout << "Max on path 4 to 6: " << hld.queryPath(4, 6) << endl;
+    
+    return 0;
+}
+```
+
+Advanced: Subtree Queries and Lazy Updates
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+struct LazySegmentTree {
+    vector<long long> tree, lazy;
+    int n;
+    
+    LazySegmentTree(int size) : n(size) {
+        tree.assign(4 * n, 0);
+        lazy.assign(4 * n, 0);
+    }
+    
+    void push(int node, int start, int end) {
+        if (lazy[node] != 0) {
+            tree[node] += (end - start + 1) * lazy[node];
+            if (start != end) {
+                lazy[2 * node] += lazy[node];
+                lazy[2 * node + 1] += lazy[node];
+            }
+            lazy[node] = 0;
+        }
+    }
+    
+    void updateRange(int node, int start, int end, int l, int r, long long val) {
+        push(node, start, end);
+        if (start > end || start > r || end < l) return;
+        
+        if (l <= start && end <= r) {
+            tree[node] += (end - start + 1) * val;
+            if (start != end) {
+                lazy[2 * node] += val;
+                lazy[2 * node + 1] += val;
+            }
+            return;
+        }
+        
+        int mid = (start + end) / 2;
+        updateRange(2 * node, start, mid, l, r, val);
+        updateRange(2 * node + 1, mid + 1, end, l, r, val);
+        
+        push(2 * node, start, mid);
+        push(2 * node + 1, mid + 1, end);
+        tree[node] = tree[2 * node] + tree[2 * node + 1];
+    }
+    
+    long long queryRange(int node, int start, int end, int l, int r) {
+        if (start > end || start > r || end < l) return 0;
+        
+        push(node, start, end);
+        
+        if (l <= start && end <= r) return tree[node];
+        
+        int mid = (start + end) / 2;
+        return queryRange(2 * node, start, mid, l, r) +
+               queryRange(2 * node + 1, mid + 1, end, l, r);
+    }
+};
+
+class HLDAdvanced {
+private:
+    vector<vector<int>> adj;
+    vector<int> parent, depth, chainHead, pos;
+    vector<LazySegmentTree*> chainTrees;
+    int n, timer;
+    
+    int dfs_size(int u, int p, vector<int>& subtreeSize) {
+        subtreeSize[u] = 1;
+        for (int v : adj[u]) {
+            if (v != p) {
+                parent[v] = u;
+                depth[v] = depth[u] + 1;
+                subtreeSize[u] += dfs_size(v, u, subtreeSize);
+            }
+        }
+        return subtreeSize[u];
+    }
+    
+    void decompose(int u, int p, int head, vector<int>& subtreeSize) {
+        chainHead[u] = head;
+        pos[u] = timer++;
+        
+        int heavyChild = -1;
+        for (int v : adj[u]) {
+            if (v != p && (heavyChild == -1 || 
+                subtreeSize[v] > subtreeSize[heavyChild])) {
+                heavyChild = v;
+            }
+        }
+        
+        if (heavyChild != -1) {
+            decompose(heavyChild, u, head, subtreeSize);
+        }
+        
+        for (int v : adj[u]) {
+            if (v != p && v != heavyChild) {
+                decompose(v, u, v, subtreeSize);
+            }
+        }
+    }
+    
+public:
+    HLDAdvanced(int size) : n(size), timer(0) {
+        adj.resize(n);
+        parent.assign(n, -1);
+        depth.assign(n, 0);
+        chainHead.resize(n);
+        pos.resize(n);
+    }
+    
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    void build() {
+        vector<int> subtreeSize(n);
+        dfs_size(0, -1, subtreeSize);
+        parent[0] = -1;
+        depth[0] = 0;
+        decompose(0, -1, 0, subtreeSize);
+        
+        chainTrees.assign(n, nullptr);
+    }
+    
+    void updatePath(int u, int v, long long val) {
+        while (chainHead[u] != chainHead[v]) {
+            if (depth[chainHead[u]] > depth[chainHead[v]]) {
+                int chain = chainHead[u];
+                if (!chainTrees[chain]) {
+                    chainTrees[chain] = new LazySegmentTree(n);
+                }
+                chainTrees[chain]->updateRange(1, 0, n - 1, 
+                    pos[chainHead[u]], pos[u], val);
+                u = parent[chainHead[u]];
+            } else {
+                int chain = chainHead[v];
+                if (!chainTrees[chain]) {
+                    chainTrees[chain] = new LazySegmentTree(n);
+                }
+                chainTrees[chain]->updateRange(1, 0, n - 1,
+                    pos[chainHead[v]], pos[v], val);
+                v = parent[chainHead[v]];
+            }
+        }
+        
+        if (depth[u] > depth[v]) swap(u, v);
+        int chain = chainHead[u];
+        if (!chainTrees[chain]) {
+            chainTrees[chain] = new LazySegmentTree(n);
+        }
+        chainTrees[chain]->updateRange(1, 0, n - 1, pos[u], pos[v], val);
+    }
+    
+    long long queryPath(int u, int v) {
+        long long result = 0;
+        
+        while (chainHead[u] != chainHead[v]) {
+            if (depth[chainHead[u]] > depth[chainHead[v]]) {
+                int chain = chainHead[u];
+                if (chainTrees[chain]) {
+                    result += chainTrees[chain]->queryRange(1, 0, n - 1,
+                        pos[chainHead[u]], pos[u]);
+                }
+                u = parent[chainHead[u]];
+            } else {
+                int chain = chainHead[v];
+                if (chainTrees[chain]) {
+                    result += chainTrees[chain]->queryRange(1, 0, n - 1,
+                        pos[chainHead[v]], pos[v]);
+                }
+                v = parent[chainHead[v]];
+            }
+        }
+        
+        if (depth[u] > depth[v]) swap(u, v);
+        int chain = chainHead[u];
+        if (chainTrees[chain]) {
+            result += chainTrees[chain]->queryRange(1, 0, n - 1, pos[u], pos[v]);
+        }
+        
+        return result;
+    }
+};
+
+int main() {
+    HLDAdvanced hld(7);
+    
+    hld.addEdge(0, 1);
+    hld.addEdge(0, 2);
+    hld.addEdge(1, 3);
+    hld.addEdge(1, 4);
+    hld.addEdge(2, 5);
+    hld.addEdge(2, 6);
+    
+    hld.build();
+    
+    hld.updatePath(3, 5, 10);
+    cout << "Sum on path 3 to 5: " << hld.queryPath(3, 5) << endl;
+    
+    hld.updatePath(4, 6, 5);
+    cout << "Sum on path 4 to 6: " << hld.queryPath(4, 6) << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 3. Mo's Algorithm
+
+Processes range queries offline by reordering queries to minimize pointer movement.
+
+Core Concept:
+- Sort queries by (left / block_size, right)
+- Maintain pointers for current range
+- Answer queries in sorted order
+- Time: O((N + Q) * sqrt(N))
+
+Simple Implementation (Range Frequency):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+struct Query {
+    int l, r, idx;
+    bool operator<(const Query& other) const {
+        int block = (int)sqrt(1000) + 1;
+        if (l / block != other.l / block) {
+            return l / block < other.l / block;
+        }
+        return r < other.r;
+    }
+};
+
+int main() {
+    int n = 10;
+    vector<int> arr = {1, 2, 3, 2, 1, 3, 2, 1, 3, 2};
+    
+    int q = 5;
+    vector<Query> queries(q);
+    
+    queries[0] = {0, 3, 0};
+    queries[1] = {2, 5, 1};
+    queries[2] = {1, 4, 2};
+    queries[3] = {3, 7, 3};
+    queries[4] = {0, 9, 4};
+    
+    sort(queries.begin(), queries.end());
+    
+    vector<int> ans(q);
+    vector<int> freq(n + 1, 0);
+    int currentLeft = 0, currentRight = -1;
+    int distinct = 0;
+    
+    for (auto query : queries) {
+        int l = query.l, r = query.r, idx = query.idx;
+        
+        // Extend right
+        while (currentRight < r) {
+            currentRight++;
+            freq[arr[currentRight]]++;
+            if (freq[arr[currentRight]] == 1) distinct++;
+        }
+        
+        // Contract right
+        while (currentRight > r) {
+            if (freq[arr[currentRight]] == 1) distinct--;
+            freq[arr[currentRight]]--;
+            currentRight--;
+        }
+        
+        // Extend left
+        while (currentLeft < l) {
+            if (freq[arr[currentLeft]] == 1) distinct--;
+            freq[arr[currentLeft]]--;
+            currentLeft++;
+        }
+        
+        // Contract left
+        while (currentLeft > l) {
+            currentLeft--;
+            freq[arr[currentLeft]]++;
+            if (freq[arr[currentLeft]] == 1) distinct++;
+        }
+        
+        ans[idx] = distinct;
+    }
+    
+    for (int i = 0; i < q; i++) {
+        cout << "Query " << i << ": " << ans[i] << endl;
+    }
+    
+    return 0;
+}
+```
+
+Intermediate: Mo's with Sum Queries
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+struct Query {
+    int l, r, idx;
+    bool operator<(const Query& other) const {
+        int block = (int)sqrt(100000) + 1;
+        if (l / block != other.l / block) {
+            return l / block < other.l / block;
+        }
+        return r < other.r;
+    }
+};
+
+int main() {
+    int n = 1000;
+    vector<long long> arr(n);
+    for (int i = 0; i < n; i++) {
+        arr[i] = i + 1;
+    }
+    
+    int q = 100;
+    vector<Query> queries(q);
+    
+    for (int i = 0; i < q; i++) {
+        queries[i].l = rand() % n;
+        queries[i].r = rand() % n;
+        if (queries[i].l > queries[i].r) swap(queries[i].l, queries[i].r);
+        queries[i].idx = i;
+    }
+    
+    sort(queries.begin(), queries.end());
+    
+    vector<long long> ans(q);
+    long long currentSum = 0;
+    int currentLeft = 0, currentRight = -1;
+    
+    for (auto query : queries) {
+        int l = query.l, r = query.r, idx = query.idx;
+        
+        while (currentRight < r) {
+            currentRight++;
+            currentSum += arr[currentRight];
+        }
+        
+        while (currentRight > r) {
+            currentSum -= arr[currentRight];
+            currentRight--;
+        }
+        
+        while (currentLeft < l) {
+            currentSum -= arr[currentLeft];
+            currentLeft++;
+        }
+        
+        while (currentLeft > l) {
+            currentLeft--;
+            currentSum += arr[currentLeft];
+        }
+        
+        ans[idx] = currentSum;
+    }
+    
+    for (int i = 0; i < min(10, q); i++) {
+        cout << "Query " << i << ": " << ans[i] << endl;
+    }
+    
+    return 0;
+}
+```
+
+Advanced: Mo's on Trees
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+using namespace std;
+
+struct Query {
+    int u, v, idx;
+    bool operator<(const Query& other) const {
+        int block = (int)sqrt(100000) + 1;
+        if (u / block != other.u / block) {
+            return u / block < other.u / block;
+        }
+        return v < other.v;
+    }
+};
+
+class MosTree {
+private:
+    vector<vector<int>> adj;
+    vector<int> inTime, outTime, pathNodes;
+    int timer;
+    
+    void dfs(int u, int p) {
+        inTime[u] = timer++;
+        pathNodes.push_back(u);
+        
+        for (int v : adj[u]) {
+            if (v != p) {
+                dfs(v, u);
+            }
+        }
+        
+        outTime[u] = timer;
+    }
+    
+    bool isAncestor(int u, int v) {
+        return inTime[u] <= inTime[v] && outTime[v] <= outTime[u];
+    }
+    
+public:
+    MosTree(int n) : adj(n), inTime(n), outTime(n), timer(0) {}
+    
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    void build() {
+        dfs(0, -1);
+    }
+    
+    void processQueries(vector<Query>& queries, vector<int>& arr, 
+                       vector<long long>& results) {
+        sort(queries.begin(), queries.end());
+        
+        vector<int> freq(10001, 0);
+        int currentLeft = 0, currentRight = -1;
+        int distinct = 0;
+        
+        for (auto query : queries) {
+            int u = query.u, v = query.v, idx = query.idx;
+            
+            int l = min(inTime[u], inTime[v]);
+            int r = max(inTime[u], inTime[v]);
+            
+            while (currentRight < r) {
+                currentRight++;
+                int node = pathNodes[currentRight];
+                freq[arr[node]]++;
+                if (freq[arr[node]] == 1) distinct++;
+            }
+            
+            while (currentRight > r) {
+                int node = pathNodes[currentRight];
+                if (freq[arr[node]] == 1) distinct--;
+                freq[arr[node]]--;
+                currentRight--;
+            }
+            
+            while (currentLeft < l) {
+                int node = pathNodes[currentLeft];
+                if (freq[arr[node]] == 1) distinct--;
+                freq[arr[node]]--;
+                currentLeft++;
+            }
+            
+            while (currentLeft > l) {
+                currentLeft--;
+                int node = pathNodes[currentLeft];
+                freq[arr[node]]++;
+                if (freq[arr[node]] == 1) distinct++;
+            }
+            
+            results[idx] = distinct;
+        }
+    }
+};
+
+int main() {
+    int n = 10;
+    MosTree tree(n);
+    
+    for (int i = 0; i < n - 1; i++) {
+        tree.addEdge(i, i + 1);
+    }
+    
+    tree.build();
+    
+    vector<int> arr(n);
+    for (int i = 0; i < n; i++) {
+        arr[i] = (i % 3) + 1;
+    }
+    
+    vector<Query> queries = {{0, 3, 0}, {2, 5, 1}, {1, 7, 2}};
+    vector<long long> results(queries.size());
+    
+    tree.processQueries(queries, arr, results);
+    
+    for (int i = 0; i < queries.size(); i++) {
+        cout << "Query " << i << ": " << results[i] << endl;
+    }
+    
+    return 0;
+}
+```
+
+---
+
+## 4. Suffix Array / Suffix Tree
+
+Suffix arrays store sorted suffixes of a string for efficient pattern matching.
+
+Simple Suffix Array with LCP (O(n log^2 n)):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+class SuffixArray {
+private:
+    string s;
+    vector<int> sa, rank, tmp;
+    int n;
+    
+    bool compareFunc(int i, int j, int k) {
+        if (rank[i] != rank[j]) return rank[i] < rank[j];
+        int ri = (i + k <= n) ? rank[i + k] : -1;
+        int rj = (j + k <= n) ? rank[j + k] : -1;
+        return ri < rj;
+    }
+    
+public:
+    SuffixArray(string str) : s(str), n(str.length()) {
+        sa.assign(n, 0);
+        rank.assign(n, 0);
+        tmp.assign(n, 0);
+        
+        for (int i = 0; i < n; i++) {
+            sa[i] = i;
+            rank[i] = s[i];
+        }
+        
+        for (int k = 1; k < n; k *= 2) {
+            sort(sa.begin(), sa.end(), 
+                 [this, k](int i, int j) { 
+                     return compareFunc(i, j, k); 
+                 });
+            
+            tmp[sa[0]] = 0;
+            for (int i = 1; i < n; i++) {
+                tmp[sa[i]] = tmp[sa[i - 1]] + 
+                    (compareFunc(sa[i - 1], sa[i], k) ? 1 : 0);
+            }
+            
+            rank = tmp;
+            if (rank[sa[n - 1]] == n - 1) break;
+        }
+    }
+    
+    vector<int> getLCP() {
+        vector<int> lcp(n, 0);
+        vector<int> rank_rev(n);
+        
+        for (int i = 0; i < n; i++) {
+            rank_rev[sa[i]] = i;
+        }
+        
+        int h = 0;
+        for (int i = 0; i < n; i++) {
+            if (rank_rev[i] == n - 1) {
+                h = 0;
+                continue;
+            }
+            
+            int j = sa[rank_rev[i] + 1];
+            
+            while (i + h < n && j + h < n && s[i + h] == s[j + h]) {
+                h++;
+            }
+            
+            lcp[rank_rev[i]] = h;
+            
+            if (h > 0) h--;
+        }
+        
+        return lcp;
+    }
+    
+    vector<int> getSuffixArray() {
+        return sa;
+    }
+    
+    int patternOccurrence(string pattern) {
+        int l = 0, r = n - 1;
+        
+        while (l <= r) {
+            int mid = (l + r) / 2;
+            int suffix = sa[mid];
+            
+            int cmp = s.compare(suffix, pattern.length(), pattern);
+            
+            if (cmp == 0) return suffix;
+            else if (cmp < 0) l = mid + 1;
+            else r = mid - 1;
+        }
+        
+        return -1;
+    }
+};
+
+int main() {
+    string s = "banana";
+    SuffixArray sa(s);
+    
+    cout << "Suffix Array: ";
+    for (int idx : sa.getSuffixArray()) {
+        cout << idx << " ";
+    }
+    cout << endl;
+    
+    vector<int> lcp = sa.getLCP();
+    cout << "LCP Array: ";
+    for (int val : lcp) {
+        cout << val << " ";
+    }
+    cout << endl;
+    
+    int pos = sa.patternOccurrence("ana");
+    cout << "Pattern 'ana' found at position: " << pos << endl;
+    
+    return 0;
+}
+```
+
+Intermediate: Kasai Algorithm for LCP (O(n)):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+class SuffixArrayKasai {
+private:
+    string s;
+    vector<int> sa, rank, lcp;
+    int n;
+    
+public:
+    SuffixArrayKasai(string str) : s(str), n(str.length()) {
+        sa.assign(n, 0);
+        rank.assign(n, 0);
+        lcp.assign(n, 0);
+        
+        // Build suffix array using simple method
+        for (int i = 0; i < n; i++) {
+            sa[i] = i;
+        }
+        
+        sort(sa.begin(), sa.end(), 
+             [this](int i, int j) { 
+                 return s.compare(i, n - i, s, j, n - j) < 0;
+             });
+        
+        // Build rank array
+        rank[sa[0]] = 0;
+        for (int i = 1; i < n; i++) {
+            rank[sa[i]] = rank[sa[i - 1]];
+            if (s.compare(sa[i - 1], n - sa[i - 1], s, sa[i], n - sa[i]) != 0) {
+                rank[sa[i]]++;
+            }
+        }
+        
+        // Kasai algorithm for LCP
+        int h = 0;
+        for (int i = 0; i < n; i++) {
+            if (rank[i] > 0) {
+                int j = sa[rank[i] - 1];
+                
+                while (i + h < n && j + h < n && s[i + h] == s[j + h]) {
+                    h++;
+                }
+                
+                lcp[rank[i]] = h;
+                
+                if (h > 0) h--;
+            }
+        }
+    }
+    
+    vector<int> getSuffixArray() { return sa; }
+    vector<int> getLCPArray() { return lcp; }
+    
+    int countDistinctSubstrings() {
+        long long count = n;
+        for (int i = 1; i < n; i++) {
+            count += n - sa[i] - lcp[i];
+        }
+        return count;
+    }
+};
+
+int main() {
+    string s = "abaaba";
+    SuffixArrayKasai sa(s);
+    
+    cout << "Suffix Array: ";
+    for (int idx : sa.getSuffixArray()) {
+        cout << s.substr(idx) << " | ";
+    }
+    cout << endl;
+    
+    cout << "LCP Array: ";
+    for (int val : sa.getLCPArray()) {
+        cout << val << " ";
+    }
+    cout << endl;
+    
+    cout << "Total distinct substrings: " << sa.countDistinctSubstrings() << endl;
+    
+    return 0;
+}
+```
+
+Advanced: Suffix Tree (Simplified):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+using namespace std;
+
+struct SuffixTreeNode {
+    map<char, SuffixTreeNode*> children;
+    int start, end;
+    SuffixTreeNode* link;
+    
+    SuffixTreeNode(int s, int e) : start(s), end(e), link(nullptr) {}
+};
+
+class SuffixTree {
+private:
+    string s;
+    SuffixTreeNode* root;
+    
+    void insert(string& text) {
+        for (int i = 0; i < text.length(); i++) {
+            SuffixTreeNode* current = root;
+            for (int j = i; j < text.length(); j++) {
+                char ch = text[j];
+                
+                if (current->children.find(ch) == current->children.end()) {
+                    current->children[ch] = new SuffixTreeNode(j, text.length() - 1);
+                }
+                
+                current = current->children[ch];
+            }
+        }
+    }
+    
+public:
+    SuffixTree(string str) : s(str) {
+        root = new SuffixTreeNode(-1, -1);
+        insert(s);
+    }
+    
+    bool search(string pattern) {
+        SuffixTreeNode* current = root;
+        
+        for (char ch : pattern) {
+            if (current->children.find(ch) == current->children.end()) {
+                return false;
+            }
+            current = current->children[ch];
+        }
+        
+        return true;
+    }
+};
+
+int main() {
+    string s = "banana";
+    SuffixTree tree(s);
+    
+    cout << "Search 'ana': " << (tree.search("ana") ? "Found" : "Not Found") << endl;
+    cout << "Search 'ban': " << (tree.search("ban") ? "Found" : "Not Found") << endl;
+    cout << "Search 'xyz': " << (tree.search("xyz") ? "Found" : "Not Found") << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 5. Advanced Graph Algorithms
+
+### Centroid Decomposition
+
+Tree divide-and-conquer technique for path/distance queries.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class CentroidDecomposition {
+private:
+    vector<vector<int>> adj;
+    vector<bool> removed;
+    vector<int> subtreeSize;
+    int n;
+    
+    int getSize(int u, int p) {
+        subtreeSize[u] = 1;
+        for (int v : adj[u]) {
+            if (v != p && !removed[v]) {
+                subtreeSize[u] += getSize(v, u);
+            }
+        }
+        return subtreeSize[u];
+    }
+    
+    int getCentroid(int u, int p, int treeSize) {
+        for (int v : adj[u]) {
+            if (v != p && !removed[v] && subtreeSize[v] > treeSize / 2) {
+                return getCentroid(v, u, treeSize);
+            }
+        }
+        return u;
+    }
+    
+    void decompose(int u) {
+        int size = getSize(u, -1);
+        int centroid = getCentroid(u, -1, size);
+        
+        removed[centroid] = true;
+        
+        // Process centroid
+        for (int v : adj[centroid]) {
+            if (!removed[v]) {
+                decompose(v);
+            }
+        }
+    }
+    
+public:
+    CentroidDecomposition(int size) : n(size), adj(n), 
+                                      removed(n, false), 
+                                      subtreeSize(n, 0) {}
+    
+    void addEdge(int u, int v) {
+        adj[u].push_back(v);
+        adj[v].push_back(u);
+    }
+    
+    void build() {
+        decompose(0);
+    }
+};
+
+int main() {
+    CentroidDecomposition cd(7);
+    
+    cd.addEdge(0, 1);
+    cd.addEdge(0, 2);
+    cd.addEdge(1, 3);
+    cd.addEdge(1, 4);
+    cd.addEdge(2, 5);
+    cd.addEdge(2, 6);
+    
+    cd.build();
+    cout << "Centroid decomposition complete" << endl;
+    
+    return 0;
+}
+```
+
+### 2-SAT with Kosaraju
+
+Determines satisfiability of boolean formulas with 2 literals per clause.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <stack>
+#include <algorithm>
+using namespace std;
+
+class TwoSAT {
+private:
+    vector<vector<int>> adj, radj;
+    vector<bool> visited;
+    stack<int> st;
+    vector<int> component;
+    int n;
+    
+    void dfs1(int u) {
+        visited[u] = true;
+        for (int v : adj[u]) {
+            if (!visited[v]) dfs1(v);
+        }
+        st.push(u);
+    }
+    
+    void dfs2(int u, int comp) {
+        component[u] = comp;
+        for (int v : radj[u]) {
+            if (component[v] == -1) dfs2(v, comp);
+        }
+    }
+    
+public:
+    TwoSAT(int vars) : n(vars * 2), adj(n), radj(n), 
+                       visited(n, false), component(n, -1) {}
+    
+    void addClause(int a, bool va, int b, bool vb) {
+        // (a v b) => (~a -> b) and (~b -> a)
+        int na = a * 2 + (va ? 0 : 1);
+        int pa = a * 2 + (va ? 1 : 0);
+        int nb = b * 2 + (vb ? 0 : 1);
+        int pb = b * 2 + (vb ? 1 : 0);
+        
+        adj[na].push_back(pb);
+        radj[pb].push_back(na);
+        adj[nb].push_back(pa);
+        radj[pa].push_back(nb);
+    }
+    
+    bool solve() {
+        for (int i = 0; i < n; i++) {
+            if (!visited[i]) dfs1(i);
+        }
+        
+        int comp = 0;
+        while (!st.empty()) {
+            int u = st.top();
+            st.pop();
+            if (component[u] == -1) {
+                dfs2(u, comp++);
+            }
+        }
+        
+        for (int i = 0; i < n / 2; i++) {
+            if (component[i * 2] == component[i * 2 + 1]) {
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    vector<bool> getAssignment() {
+        vector<bool> result(n / 2);
+        for (int i = 0; i < n / 2; i++) {
+            result[i] = component[i * 2] > component[i * 2 + 1];
+        }
+        return result;
+    }
+};
+
+int main() {
+    TwoSAT sat(3);
+    
+    // (x0 v x1) and (~x1 v x2)
+    sat.addClause(0, true, 1, true);
+    sat.addClause(1, false, 2, true);
+    
+    if (sat.solve()) {
+        cout << "Satisfiable" << endl;
+        vector<bool> assignment = sat.getAssignment();
+        for (int i = 0; i < assignment.size(); i++) {
+            cout << "x" << i << " = " << (assignment[i] ? "true" : "false") << endl;
+        }
+    } else {
+        cout << "Unsatisfiable" << endl;
+    }
+    
+    return 0;
+}
+```
+
+---
+
+## 6. Number Theory Deep
+
+### Miller-Rabin Primality Test
+
+Probabilistic O(k log n) primality test.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <random>
+using namespace std;
+
+typedef long long ll;
+
+ll mulmod(ll a, ll b, ll mod) {
+    return (__int128)a * b % mod;
+}
+
+ll powmod(ll base, ll exp, ll mod) {
+    ll result = 1;
+    base %= mod;
+    while (exp > 0) {
+        if (exp & 1) result = mulmod(result, base, mod);
+        base = mulmod(base, base, mod);
+        exp >>= 1;
+    }
+    return result;
+}
+
+bool millerRabin(ll n, int rounds = 40) {
+    if (n < 2) return false;
+    if (n == 2 || n == 3) return true;
+    if (n % 2 == 0) return false;
+    
+    ll d = n - 1;
+    int r = 0;
+    while (d % 2 == 0) {
+        d /= 2;
+        r++;
+    }
+    
+    mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+    uniform_int_distribution<ll> dist(2, n - 2);
+    
+    for (int i = 0; i < rounds; i++) {
+        ll a = dist(rng);
+        ll x = powmod(a, d, n);
+        
+        if (x == 1 || x == n - 1) continue;
+        
+        bool composite = true;
+        for (int j = 0; j < r - 1; j++) {
+            x = mulmod(x, x, n);
+            if (x == n - 1) {
+                composite = false;
+                break;
+            }
+        }
+        
+        if (composite) return false;
+    }
+    
+    return true;
+}
+
+int main() {
+    vector<ll> numbers = {2, 3, 5, 7, 11, 13, 97, 100, 1000000007};
+    
+    for (ll num : numbers) {
+        cout << num << " is " << (millerRabin(num) ? "prime" : "composite") << endl;
+    }
+    
+    return 0;
+}
+```
+
+### Pollard's Rho Factorization
+
+Random algorithm for integer factorization.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+using namespace std;
+
+typedef long long ll;
+
+ll gcd(ll a, ll b) {
+    while (b) {
+        ll tmp = b;
+        b = a % b;
+        a = tmp;
+    }
+    return a;
+}
+
+ll pollardRho(ll n) {
+    if (n % 2 == 0) return 2;
+    if (n == 1) return 1;
+    
+    mt19937_64 rng(chrono::steady_clock::now().time_since_epoch().count());
+    uniform_int_distribution<ll> dist(1, n - 1);
+    
+    ll x = dist(rng);
+    ll c = dist(rng);
+    ll y = x;
+    ll d = 1;
+    
+    auto f = [&](ll val) {
+        return ((__int128)val * val + c) % n;
+    };
+    
+    while (d == 1) {
+        x = f(x);
+        y = f(f(y));
+        d = gcd(abs(x - y), n);
+    }
+    
+    if (d == n) {
+        return pollardRho(n);
+    }
+    
+    return d;
+}
+
+vector<ll> factorize(ll n) {
+    vector<ll> factors;
+    
+    while (n % 2 == 0) {
+        factors.push_back(2);
+        n /= 2;
+    }
+    
+    while (n > 1) {
+        ll factor = pollardRho(n);
+        while (n % factor == 0) {
+            factors.push_back(factor);
+            n /= factor;
+        }
+    }
+    
+    sort(factors.begin(), factors.end());
+    return factors;
+}
+
+int main() {
+    vector<ll> numbers = {60, 100, 1234567890};
+    
+    for (ll num : numbers) {
+        vector<ll> factors = factorize(num);
+        cout << num << " = ";
+        for (int i = 0; i < factors.size(); i++) {
+            if (i > 0) cout << " * ";
+            cout << factors[i];
+        }
+        cout << endl;
+    }
+    
+    return 0;
+}
+```
+
+### Chinese Remainder Theorem (CRT)
+
+Combines congruences to solve modular systems.
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+typedef long long ll;
+
+ll gcdExtended(ll a, ll b, ll& x, ll& y) {
+    if (b == 0) {
+        x = 1;
+        y = 0;
+        return a;
+    }
+    ll x1, y1;
+    ll gcd = gcdExtended(b, a % b, x1, y1);
+    x = y1;
+    y = x1 - (a / b) * y1;
+    return gcd;
+}
+
+ll crt(vector<ll>& remainders, vector<ll>& moduli) {
+    ll M = 1;
+    for (ll m : moduli) M *= m;
+    
+    ll result = 0;
+    
+    for (int i = 0; i < remainders.size(); i++) {
+        ll Mi = M / moduli[i];
+        ll x, y;
+        gcdExtended(Mi, moduli[i], x, y);
+        
+        x = (x % moduli[i] + moduli[i]) % moduli[i];
+        
+        result += remainders[i] * Mi * x;
+        result %= M;
+    }
+    
+    return (result + M) % M;
+}
+
+int main() {
+    vector<ll> remainders = {2, 3, 2};
+    vector<ll> moduli = {3, 5, 7};
+    
+    ll result = crt(remainders, moduli);
+    
+    cout << "Solution: x = " << result << endl;
+    for (int i = 0; i < remainders.size(); i++) {
+        cout << result << " mod " << moduli[i] << " = " << (result % moduli[i]) << endl;
+    }
+    
+    return 0;
+}
+```
+
+---
+
+## 7. Range Query Data Structures
+
+### Wavelet Tree
+
+Enables rank/select queries on arrays.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
+
+class WaveletTree {
+private:
+    struct Node {
+        vector<int> bitmap;
+        Node* left;
+        Node* right;
+        int minVal, maxVal;
+        
+        Node() : left(nullptr), right(nullptr) {}
+    };
+    
+    Node* root;
+    
+    Node* build(vector<int>& arr, int l, int r, int lo, int hi) {
+        if (l > r || lo > hi) return nullptr;
+        
+        Node* node = new Node();
+        node->minVal = lo;
+        node->maxVal = hi;
+        
+        if (lo == hi) return node;
+        
+        int mid = (lo + hi) / 2;
+        node->bitmap.assign(r - l + 2, 0);
+        
+        for (int i = l; i <= r; i++) {
+            if (arr[i] <= mid) {
+                node->bitmap[i - l + 1] = 0;
+            } else {
+                node->bitmap[i - l + 1] = 1;
+            }
+        }
+        
+        // Prefix sum
+        for (int i = 1; i < node->bitmap.size(); i++) {
+            node->bitmap[i] += node->bitmap[i - 1];
+        }
+        
+        vector<int> left_arr, right_arr;
+        for (int i = l; i <= r; i++) {
+            if (arr[i] <= mid) {
+                left_arr.push_back(arr[i]);
+            } else {
+                right_arr.push_back(arr[i]);
+            }
+        }
+        
+        node->left = build(left_arr, 0, left_arr.size() - 1, lo, mid);
+        node->right = build(right_arr, 0, right_arr.size() - 1, mid + 1, hi);
+        
+        return node;
+    }
+    
+public:
+    WaveletTree(vector<int>& arr) {
+        int maxVal = *max_element(arr.begin(), arr.end());
+        root = build(arr, 0, arr.size() - 1, 0, maxVal);
+    }
+};
+
+int main() {
+    vector<int> arr = {3, 1, 4, 1, 5, 9, 2, 6};
+    WaveletTree wt(arr);
+    
+    cout << "Wavelet tree built successfully" << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 8. Polynomial Algorithms
+
+### Lagrange Interpolation
+
+Finds polynomial passing through given points.
+
+```cpp
+#include <iostream>
+#include <vector>
+using namespace std;
+
+typedef long long ll;
+
+const ll MOD = 1e9 + 7;
+
+ll power(ll a, ll b, ll mod) {
+    ll res = 1;
+    a %= mod;
+    while (b > 0) {
+        if (b & 1) res = (res * a) % mod;
+        a = (a * a) % mod;
+        b >>= 1;
+    }
+    return res;
+}
+
+ll modInv(ll a, ll mod) {
+    return power(a, mod - 2, mod);
+}
+
+ll lagrange(vector<pair<ll, ll>>& points, ll x) {
+    ll n = points.size();
+    ll result = 0;
+    
+    for (int i = 0; i < n; i++) {
+        ll numerator = points[i].second;
+        ll denominator = 1;
+        
+        for (int j = 0; j < n; j++) {
+            if (i != j) {
+                numerator = (numerator * ((x - points[j].first + MOD) % MOD)) % MOD;
+                denominator = (denominator * ((points[i].first - points[j].first + MOD) % MOD)) % MOD;
+            }
+        }
+        
+        result = (result + numerator * modInv(denominator, MOD)) % MOD;
+    }
+    
+    return result;
+}
+
+int main() {
+    vector<pair<ll, ll>> points = {{0, 1}, {1, 2}, {2, 4}};
+    
+    ll x = 3;
+    ll y = lagrange(points, x);
+    
+    cout << "f(" << x << ") = " << y << endl;
+    
+    return 0;
+}
+```
+
+---
+
+End of Black Hole Mastery Compendium.
 
 ---
 End-of-File
