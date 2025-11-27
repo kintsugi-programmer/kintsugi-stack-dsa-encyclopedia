@@ -156,6 +156,55 @@
     - [Data Structures](#data-structures-1)
     - [Algorithms](#algorithms-1)
   - [Interview Mastery Checklist](#interview-mastery-checklist)
+- [DSA Rabbit Holes: Advanced Topics Beyond Core Algorithms](#dsa-rabbit-holes-advanced-topics-beyond-core-algorithms)
+  - [1. Advanced Trees (Missing Pieces)](#1-advanced-trees-missing-pieces)
+    - [Splay Tree](#splay-tree)
+      - [Splay Tree Implementation:](#splay-tree-implementation)
+    - [Treap (Tree + Heap Hybrid)](#treap-tree--heap-hybrid)
+      - [Treap Implementation:](#treap-implementation)
+    - [Cartesian Tree](#cartesian-tree)
+      - [Cartesian Tree Construction:](#cartesian-tree-construction)
+    - [K-D Tree (For Multidimensional Queries)](#k-d-tree-for-multidimensional-queries)
+      - [K-D Tree (2D Example):](#k-d-tree-2d-example)
+  - [2. Advanced Graph Theory](#2-advanced-graph-theory)
+    - [Johnson's Algorithm (All-Pairs Shortest Paths)](#johnsons-algorithm-all-pairs-shortest-paths)
+    - [Max Flow (Edmonds-Karp \& Dinic's)](#max-flow-edmonds-karp--dinics)
+      - [Edmonds-Karp (BFS-based Ford-Fulkerson):](#edmonds-karp-bfs-based-ford-fulkerson)
+      - [Dinic's Algorithm (More Efficient):](#dinics-algorithm-more-efficient)
+    - [Min-Cost Max-Flow](#min-cost-max-flow)
+    - [Hungarian Algorithm (Assignment Problem)](#hungarian-algorithm-assignment-problem)
+    - [Eulerian Path / Circuit](#eulerian-path--circuit)
+    - [Articulation Points (Cut Vertices)](#articulation-points-cut-vertices)
+    - [Biconnected Components](#biconnected-components)
+  - [3. Advanced DP](#3-advanced-dp)
+    - [DP with Bitsets](#dp-with-bitsets)
+    - [DP with Convex Hull Trick (CHT)](#dp-with-convex-hull-trick-cht)
+    - [Knuth Optimization](#knuth-optimization)
+    - [Divide \& Conquer Optimization](#divide--conquer-optimization)
+    - [SOS DP (Sum Over Subsets)](#sos-dp-sum-over-subsets)
+    - [DP on Bitmasks (General Forms)](#dp-on-bitmasks-general-forms)
+  - [4. Geometry Algorithms](#4-geometry-algorithms)
+    - [Convex Hull (Graham Scan)](#convex-hull-graham-scan)
+    - [Line Intersection \& Orientation](#line-intersection--orientation)
+    - [Closest Pair of Points](#closest-pair-of-points)
+    - [Sweep Line Algorithms](#sweep-line-algorithms)
+    - [Polygon Area](#polygon-area)
+  - [5. Probability / Randomized Algorithms](#5-probability--randomized-algorithms)
+    - [Randomized QuickSort](#randomized-quicksort)
+    - [Reservoir Sampling](#reservoir-sampling)
+    - [Monte Carlo vs Las Vegas](#monte-carlo-vs-las-vegas)
+    - [Bloom Filters](#bloom-filters)
+  - [6. Advanced Hashing](#6-advanced-hashing)
+    - [Double Hashing](#double-hashing)
+    - [Polynomial Rolling Hash (Deep)](#polynomial-rolling-hash-deep)
+  - [7. Compression / Encoding](#7-compression--encoding)
+    - [Huffman Coding](#huffman-coding)
+    - [Run-Length Encoding](#run-length-encoding)
+  - [8. Memory \& Low-Level DSA Concepts](#8-memory--low-level-dsa-concepts)
+    - [Cache-Friendly Algorithms](#cache-friendly-algorithms)
+    - [Amortized Analysis (Potential Method)](#amortized-analysis-potential-method)
+    - [Custom Allocators (C++)](#custom-allocators-c)
+  - [Summary: Master Map](#summary-master-map)
 
 ---
 
@@ -1328,7 +1377,8 @@ int main() {
     cout << "Graph:" << endl;
     graph.display();
     
-    cout << "\nDFS from 0: ";
+    cout << "
+    DFS from 0: ";
     graph.dfs(0);
     cout << endl;
     
@@ -1669,7 +1719,8 @@ int main() {
         }
     }
     
-    cout << "\nCharacter Frequencies:" << endl;
+    cout << "
+    Character Frequencies:" << endl;
     for (auto& p : charFreq) {
         cout << p.first << ": " << p.second << endl;
     }
@@ -1684,7 +1735,8 @@ int main() {
         uniqueNumbers.insert(num);
     }
     
-    cout << "\nUnique numbers: ";
+    cout << "
+    Unique numbers: ";
     for (int num : uniqueNumbers) {
         cout << num << " ";
     }
@@ -1793,12 +1845,14 @@ int main() {
     
     hashtable.display();
     
-    cout << "\nGet key 1: " << hashtable.get(1) << endl;
+    cout << "
+    Get key 1: " << hashtable.get(1) << endl;
     
     cout << "Contains 11: " << (hashtable.contains(11) ? "Yes" : "No") << endl;
     
     hashtable.remove(11);
-    cout << "\nAfter removing 11:" << endl;
+    cout << "
+    After removing 11:" << endl;
     hashtable.display();
     
     return 0;
@@ -5417,6 +5471,2627 @@ int main() {
 - Greedy with Sorting
 
 This expert guide covers **100% of competitive programming & interview DSA**!
+# DSA Rabbit Holes: Advanced Topics Beyond Core Algorithms
+
+> "The deeper you go, the more patterns you discover. Master these, and you've unlocked the true power of competitive programming."
+
+---
+
+## 1. Advanced Trees (Missing Pieces)
+
+You have **AVL** and **Red-Black Trees**, but these are equally important:
+
+### Splay Tree
+
+A **self-adjusting binary search tree** that moves frequently accessed elements to the root through splaying operations.
+
+**Key Concept:** Recently accessed items are faster to access again (temporal locality).
+
+#### Splay Tree Implementation:
+
+```cpp
+#include <iostream>
+#include <algorithm>
+
+using namespace std;
+
+struct SplayNode {
+    int data;
+    SplayNode* left;
+    SplayNode* right;
+    
+    SplayNode(int val) : data(val), left(nullptr), right(nullptr) {}
+};
+
+class SplayTree {
+private:
+    SplayNode* root;
+    
+    // Right rotation
+    SplayNode* rotateRight(SplayNode* x) {
+        SplayNode* y = x->left;
+        x->left = y->right;
+        y->right = x;
+        return y;
+    }
+    
+    // Left rotation
+    SplayNode* rotateLeft(SplayNode* x) {
+        SplayNode* y = x->right;
+        x->right = y->left;
+        y->left = x;
+        return y;
+    }
+    
+    // Splay operation
+    SplayNode* splay(SplayNode* root, int key) {
+        if (root == nullptr) return nullptr;
+        
+        if (key < root->data) {
+            if (root->left == nullptr) return root;
+            
+            // Zig-Zig (Left-Left)
+            if (key < root->left->data) {
+                root->left->left = splay(root->left->left, key);
+                root = rotateRight(root);
+            }
+            // Zig-Zag (Left-Right)
+            else if (key > root->left->data) {
+                root->left->right = splay(root->left->right, key);
+                if (root->left->right != nullptr) {
+                    root->left = rotateLeft(root->left);
+                }
+            }
+            
+            return root->left == nullptr ? root : rotateRight(root);
+        } 
+        else if (key > root->data) {
+            if (root->right == nullptr) return root;
+            
+            // Zig-Zig (Right-Right)
+            if (key > root->right->data) {
+                root->right->right = splay(root->right->right, key);
+                root = rotateLeft(root);
+            }
+            // Zig-Zag (Right-Left)
+            else if (key < root->right->data) {
+                root->right->left = splay(root->right->left, key);
+                if (root->right->left != nullptr) {
+                    root->right = rotateRight(root->right);
+                }
+            }
+            
+            return root->right == nullptr ? root : rotateLeft(root);
+        }
+        
+        return root;
+    }
+    
+    void inOrderHelper(SplayNode* root) {
+        if (root == nullptr) return;
+        inOrderHelper(root->left);
+        cout << root->data << " ";
+        inOrderHelper(root->right);
+    }
+    
+public:
+    SplayTree() : root(nullptr) {}
+    
+    void insert(int key) {
+        if (root == nullptr) {
+            root = new SplayNode(key);
+            return;
+        }
+        
+        root = splay(root, key);
+        
+        if (root->data == key) return; // Already exists
+        
+        SplayNode* newNode = new SplayNode(key);
+        
+        if (key < root->data) {
+            newNode->right = root;
+            newNode->left = root->left;
+            root->left = nullptr;
+        } else {
+            newNode->left = root;
+            newNode->right = root->right;
+            root->right = nullptr;
+        }
+        
+        root = newNode;
+    }
+    
+    bool search(int key) {
+        root = splay(root, key);
+        return root != nullptr && root->data == key;
+    }
+    
+    void inOrder() {
+        inOrderHelper(root);
+        cout << endl;
+    }
+};
+
+int main() {
+    SplayTree tree;
+    
+    tree.insert(10);
+    tree.insert(20);
+    tree.insert(30);
+    tree.insert(40);
+    tree.insert(50);
+    
+    cout << "In-Order: ";
+    tree.inOrder(); // 10 20 30 40 50
+    
+    tree.search(30);
+    cout << "After searching 30, In-Order: ";
+    tree.inOrder();
+    
+    return 0;
+}
+```
+
+**Use Cases:** Cache implementations, self-optimizing data structures, amortized O(log n) operations.
+
+**Time Complexity:** O(log n) amortized
+
+---
+
+### Treap (Tree + Heap Hybrid)
+
+A **randomized binary search tree** that combines properties of both BST and heap using random priorities.
+
+**Key Idea:** Assign random priorities to each node; maintain heap property on priorities while keeping BST property on keys.
+
+#### Treap Implementation:
+
+```cpp
+#include <iostream>
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+struct TreapNode {
+    int key, priority;
+    TreapNode* left;
+    TreapNode* right;
+    
+    TreapNode(int k) : key(k), priority(rand()), left(nullptr), right(nullptr) {}
+};
+
+class Treap {
+private:
+    TreapNode* root;
+    
+    TreapNode* rotateRight(TreapNode* y) {
+        TreapNode* x = y->left;
+        y->left = x->right;
+        x->right = y;
+        return x;
+    }
+    
+    TreapNode* rotateLeft(TreapNode* x) {
+        TreapNode* y = x->right;
+        x->right = y->left;
+        y->left = x;
+        return y;
+    }
+    
+    TreapNode* insertHelper(TreapNode* root, int key) {
+        if (root == nullptr) {
+            return new TreapNode(key);
+        }
+        
+        if (key < root->key) {
+            root->left = insertHelper(root->left, key);
+            if (root->left->priority > root->priority) {
+                root = rotateRight(root);
+            }
+        } else if (key > root->key) {
+            root->right = insertHelper(root->right, key);
+            if (root->right->priority > root->priority) {
+                root = rotateLeft(root);
+            }
+        }
+        
+        return root;
+    }
+    
+    TreapNode* removeHelper(TreapNode* root, int key) {
+        if (root == nullptr) return nullptr;
+        
+        if (key < root->key) {
+            root->left = removeHelper(root->left, key);
+        } else if (key > root->key) {
+            root->right = removeHelper(root->right, key);
+        } else {
+            if (root->left == nullptr) {
+                TreapNode* temp = root->right;
+                delete root;
+                return temp;
+            }
+            if (root->right == nullptr) {
+                TreapNode* temp = root->left;
+                delete root;
+                return temp;
+            }
+            
+            if (root->left->priority > root->right->priority) {
+                root = rotateRight(root);
+                root->right = removeHelper(root->right, key);
+            } else {
+                root = rotateLeft(root);
+                root->left = removeHelper(root->left, key);
+            }
+        }
+        
+        return root;
+    }
+    
+    void inOrderHelper(TreapNode* root) {
+        if (root == nullptr) return;
+        inOrderHelper(root->left);
+        cout << root->key << " ";
+        inOrderHelper(root->right);
+    }
+    
+public:
+    Treap() : root(nullptr) { srand(time(0)); }
+    
+    void insert(int key) {
+        root = insertHelper(root, key);
+    }
+    
+    void remove(int key) {
+        root = removeHelper(root, key);
+    }
+    
+    void inOrder() {
+        inOrderHelper(root);
+        cout << endl;
+    }
+};
+
+int main() {
+    Treap treap;
+    
+    treap.insert(50);
+    treap.insert(30);
+    treap.insert(70);
+    treap.insert(20);
+    treap.insert(40);
+    
+    cout << "Treap In-Order: ";
+    treap.inOrder();
+    
+    treap.remove(30);
+    cout << "After removing 30: ";
+    treap.inOrder();
+    
+    return 0;
+}
+```
+
+**Advantage:** Easier to implement than AVL/RB trees; random priorities prevent worst-case scenarios.
+
+**Time Complexity:** O(log n) with high probability
+
+---
+
+### Cartesian Tree
+
+A **binary tree derived from an array** where parent > child (max-heap property) and left/right follows in-order traversal.
+
+**Applications:** Range maximum queries, nearest greater element problems.
+
+#### Cartesian Tree Construction:
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <stack>
+
+using namespace std;
+
+struct CartesianNode {
+    int value, index;
+    CartesianNode* left;
+    CartesianNode* right;
+    
+    CartesianNode(int v, int i) : value(v), index(i), left(nullptr), right(nullptr) {}
+};
+
+CartesianNode* buildCartesianTree(vector<int>& arr) {
+    stack<CartesianNode*> st;
+    CartesianNode* root = nullptr;
+    
+    for (int i = 0; i < arr.size(); i++) {
+        CartesianNode* newNode = new CartesianNode(arr[i], i);
+        CartesianNode* lastPopped = nullptr;
+        
+        // Pop smaller elements
+        while (!st.empty() && st.top()->value < arr[i]) {
+            lastPopped = st.top();
+            st.pop();
+        }
+        
+        if (!st.empty()) {
+            st.top()->right = newNode;
+        } else {
+            root = newNode;
+        }
+        
+        if (lastPopped != nullptr) {
+            newNode->left = lastPopped;
+        }
+        
+        st.push(newNode);
+    }
+    
+    return root;
+}
+
+void inOrder(CartesianNode* root) {
+    if (root == nullptr) return;
+    inOrder(root->left);
+    cout << root->value << " ";
+    inOrder(root->right);
+}
+
+int main() {
+    vector<int> arr = {3, 2, 6, 1, 9};
+    CartesianNode* root = buildCartesianTree(arr);
+    
+    cout << "Cartesian Tree In-Order: ";
+    inOrder(root);
+    cout << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n)
+
+---
+
+### K-D Tree (For Multidimensional Queries)
+
+A **space-partitioning data structure** for organizing points in k-dimensional space.
+
+**Applications:** Nearest neighbor search, range queries, collision detection in graphics.
+
+#### K-D Tree (2D Example):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+struct Point {
+    int x, y;
+};
+
+struct KDNode {
+    Point point;
+    KDNode* left;
+    KDNode* right;
+    
+    KDNode(Point p) : point(p), left(nullptr), right(nullptr) {}
+};
+
+class KDTree {
+private:
+    KDNode* root;
+    
+    KDNode* buildHelper(vector<Point>& points, int start, int end, int depth) {
+        if (start > end) return nullptr;
+        
+        int axis = depth % 2; // 0 for x, 1 for y
+        
+        // Sort and find median
+        sort(points.begin() + start, points.begin() + end + 1, 
+             [axis](const Point& a, const Point& b) {
+                 return (axis == 0) ? a.x < b.x : a.y < b.y;
+             });
+        
+        int mid = (start + end) / 2;
+        KDNode* node = new KDNode(points[mid]);
+        
+        node->left = buildHelper(points, start, mid - 1, depth + 1);
+        node->right = buildHelper(points, mid + 1, end, depth + 1);
+        
+        return node;
+    }
+    
+    void nearestHelper(KDNode* node, Point target, int depth, 
+                       KDNode*& best, double& bestDist) {
+        if (node == nullptr) return;
+        
+        int axis = depth % 2;
+        
+        double d = sqrt(pow(node->point.x - target.x, 2) + 
+                       pow(node->point.y - target.y, 2));
+        
+        if (d < bestDist) {
+            bestDist = d;
+            best = node;
+        }
+        
+        int diff = (axis == 0) ? (target.x - node->point.x) : (target.y - node->point.y);
+        
+        KDNode* nearSide = (diff < 0) ? node->left : node->right;
+        KDNode* farSide = (diff < 0) ? node->right : node->left;
+        
+        nearestHelper(nearSide, target, depth + 1, best, bestDist);
+        
+        if (abs(diff) < bestDist) {
+            nearestHelper(farSide, target, depth + 1, best, bestDist);
+        }
+    }
+    
+public:
+    KDTree() : root(nullptr) {}
+    
+    void build(vector<Point> points) {
+        root = buildHelper(points, 0, points.size() - 1, 0);
+    }
+    
+    Point findNearest(Point target) {
+        KDNode* best = nullptr;
+        double bestDist = 1e9;
+        nearestHelper(root, target, 0, best, bestDist);
+        return best ? best->point : Point{-1, -1};
+    }
+};
+
+int main() {
+    vector<Point> points = {{2, 3}, {5, 4}, {9, 6}, {4, 7}, {8, 1}, {7, 2}};
+    
+    KDTree tree;
+    tree.build(points);
+    
+    Point target = {9, 2};
+    Point nearest = tree.findNearest(target);
+    
+    cout << "Nearest point to (" << target.x << ", " << target.y << ") is: "
+         << "(" << nearest.x << ", " << nearest.y << ")" << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(log n) average, O(n) worst case
+
+---
+
+## 2. Advanced Graph Theory
+
+Beyond standard graph algorithms, these are critical for advanced competitions:
+
+### Johnson's Algorithm (All-Pairs Shortest Paths)
+
+**Best for:** Sparse graphs with negative weights but no negative cycles.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <climits>
+#include <queue>
+
+using namespace std;
+
+const int INF = 1e9;
+
+struct Edge {
+    int u, v, weight;
+};
+
+int main() {
+    int n = 4;
+    vector<Edge> edges = {
+        {0, 1, 4}, {0, 2, 2},
+        {1, 2, 1}, {1, 3, 5},
+        {2, 3, 8}, {3, 2, 10}
+    };
+    
+    // Step 1: Add virtual source and edges
+    vector<vector<pair<int, int>>> graph(n + 1);
+    for (auto& e : edges) {
+        graph[e.u].push_back({e.v, e.weight});
+    }
+    
+    for (int i = 0; i < n; i++) {
+        graph[n].push_back({i, 0}); // Virtual source n
+    }
+    
+    // Step 2: Bellman-Ford from virtual source
+    vector<int> h(n + 1, INF);
+    h[n] = 0;
+    
+    for (int i = 0; i < n; i++) {
+        for (int u = 0; u <= n; u++) {
+            for (auto& [v, w] : graph[u]) {
+                if (h[u] != INF && h[u] + w < h[v]) {
+                    h[v] = h[u] + w;
+                }
+            }
+        }
+    }
+    
+    // Step 3: Dijkstra from each vertex with reweighted edges
+    vector<vector<int>> dist(n, vector<int>(n, INF));
+    
+    for (int src = 0; src < n; src++) {
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<>> pq;
+        vector<int> d(n, INF);
+        d[src] = 0;
+        pq.push({0, src});
+        
+        while (!pq.empty()) {
+            auto [d_u, u] = pq.top();
+            pq.pop();
+            
+            if (d_u > d[u]) continue;
+            
+            for (auto& [v, w] : graph[u]) {
+                if (v < n) { // Exclude virtual source
+                    int newWeight = w + h[u] - h[v];
+                    if (d[u] + newWeight < d[v]) {
+                        d[v] = d[u] + newWeight;
+                        pq.push({d[v], v});
+                    }
+                }
+            }
+        }
+        
+        for (int i = 0; i < n; i++) {
+            dist[src][i] = d[i];
+        }
+    }
+    
+    // Print results
+    cout << "All-pairs shortest paths:" << endl;
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < n; j++) {
+            cout << (dist[i][j] == INF ? -1 : dist[i][j]) << " ";
+        }
+        cout << endl;
+    }
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(VE + V²log V) - better than Floyd-Warshall for sparse graphs
+
+---
+
+### Max Flow (Edmonds-Karp & Dinic's)
+
+**Application:** Network routing, bipartite matching, circulation problems.
+
+#### Edmonds-Karp (BFS-based Ford-Fulkerson):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+const int INF = 1e9;
+
+class MaxFlow {
+private:
+    vector<vector<int>> capacity;
+    vector<vector<int>> graph;
+    int n;
+    
+    int bfs(int source, int sink, vector<int>& parent) {
+        fill(parent.begin(), parent.end(), -1);
+        parent[source] = source;
+        queue<pair<int, int>> q;
+        q.push({source, INF});
+        
+        while (!q.empty()) {
+            int u = q.front().first;
+            int flow = q.front().second;
+            q.pop();
+            
+            for (int v : graph[u]) {
+                if (parent[v] == -1 && capacity[u][v] > 0) {
+                    parent[v] = u;
+                    int newFlow = min(flow, capacity[u][v]);
+                    
+                    if (v == sink) {
+                        return newFlow;
+                    }
+                    
+                    q.push({v, newFlow});
+                }
+            }
+        }
+        
+        return 0;
+    }
+    
+public:
+    MaxFlow(int n) : n(n), capacity(n, vector<int>(n, 0)), graph(n) {}
+    
+    void addEdge(int u, int v, int cap) {
+        if (find(graph[u].begin(), graph[u].end(), v) == graph[u].end()) {
+            graph[u].push_back(v);
+            graph[v].push_back(u);
+        }
+        capacity[u][v] += cap;
+    }
+    
+    int maxFlow(int source, int sink) {
+        int flow = 0;
+        vector<int> parent(n);
+        int newFlow;
+        
+        while ((newFlow = bfs(source, sink, parent)) > 0) {
+            flow += newFlow;
+            
+            int v = sink;
+            while (v != source) {
+                int u = parent[v];
+                capacity[u][v] -= newFlow;
+                capacity[v][u] += newFlow;
+                v = u;
+            }
+        }
+        
+        return flow;
+    }
+};
+
+int main() {
+    MaxFlow mf(6);
+    
+    mf.addEdge(0, 1, 16);
+    mf.addEdge(0, 2, 12);
+    mf.addEdge(1, 2, 10);
+    mf.addEdge(1, 3, 12);
+    mf.addEdge(2, 1, 9);
+    mf.addEdge(2, 4, 14);
+    mf.addEdge(3, 2, 9);
+    mf.addEdge(3, 5, 20);
+    mf.addEdge(4, 3, 7);
+    mf.addEdge(4, 5, 4);
+    
+    cout << "Maximum Flow: " << mf.maxFlow(0, 5) << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(VE²)
+
+---
+
+#### Dinic's Algorithm (More Efficient):
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+
+using namespace std;
+
+const int INF = 1e9;
+
+struct Edge {
+        int to, cap, flow;
+};
+
+class Dinic {
+    private:
+    vector<Edge> edges;
+    vector<vector<int>> g;
+    vector<int> level, iter;
+    int n;
+    
+    bool bfs(int source, int sink) {
+            level.assign(n, -1);
+        level[source] = 0;
+        queue<int> q;
+        q.push(source);
+        
+        while (!q.empty()) {
+                int u = q.front();
+            q.pop();
+            
+            for (int id : g[u]) {
+                    if (level[edges[id].to] < 0 && edges[id].flow < edges[id].cap) {
+                        level[edges[id].to] = level[u] + 1;
+                    q.push(edges[id].to);
+                }
+            }
+        }
+        
+        return level[sink] >= 0;
+    }
+    
+    int dfs(int u, int sink, int pushed) {
+            if (u == sink || pushed == 0) return pushed;
+        
+        for (int& cid = iter[u]; cid < (int)g[u].size(); cid++) {
+                int id = g[u][cid];
+            int v = edges[id].to;
+            
+            if (level[u] + 1 != level[v] || edges[id].cap <= edges[id].flow)
+                continue;
+            
+            int tr = dfs(v, sink, min(pushed, edges[id].cap - edges[id].flow));
+            if (tr > 0) {
+                    edges[id].flow += tr;
+                edges[id ^ 1].flow -= tr;
+                return tr;
+            }
+        }
+        
+        return 0;
+    }
+    
+public:
+    Dinic(int n) : n(n), g(n), level(n), iter(n) {}
+    
+    void addEdge(int from, int to, int cap) {
+            g[from].push_back((int)edges.size());
+        edges.push_back({to, cap, 0});
+        g[to].push_back((int)edges.size());
+        edges.push_back({from, 0, 0});
+    }
+    
+    int maxFlow(int source, int sink) {
+            int flow = 0;
+        
+        while (bfs(source, sink)) {
+                iter.assign(n, 0);
+            while (int pushed = dfs(source, sink, INF)) {
+                    flow += pushed;
+            }
+        }
+        
+        return flow;
+    }
+};
+
+int main() {
+        Dinic dinic(6);
+    
+    dinic.addEdge(0, 1, 16);
+    dinic.addEdge(0, 2, 12);
+    dinic.addEdge(1, 2, 10);
+    dinic.addEdge(1, 3, 12);
+    dinic.addEdge(2, 1, 9);
+    dinic.addEdge(2, 4, 14);
+    dinic.addEdge(3, 2, 9);
+    dinic.addEdge(3, 5, 20);
+    dinic.addEdge(4, 3, 7);
+    dinic.addEdge(4, 5, 4);
+    
+    cout << "Maximum Flow (Dinic's): " << dinic.maxFlow(0, 5) << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(V²E)
+
+---
+
+### Min-Cost Max-Flow
+
+**Combines:** Max flow + shortest path to minimize cost.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <queue>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+struct Edge {
+        int to, cap, cost, flow;
+};
+
+class MinCostMaxFlow {
+    private:
+    vector<Edge> edges;
+    vector<vector<int>> g;
+    vector<int> dist, parent, parentEdge;
+    int n;
+    
+    bool spfa(int source, int sink) {
+            dist.assign(n, INT_MAX);
+        parent.assign(n, -1);
+        parentEdge.assign(n, -1);
+        
+        dist[source] = 0;
+        queue<int> q;
+        vector<bool> inQueue(n, false);
+        q.push(source);
+        inQueue[source] = true;
+        
+        while (!q.empty()) {
+                int u = q.front();
+            q.pop();
+            inQueue[u] = false;
+            
+            for (int id : g[u]) {
+                    Edge& e = edges[id];
+                if (e.cap > e.flow && dist[u] + e.cost < dist[e.to]) {
+                        dist[e.to] = dist[u] + e.cost;
+                    parent[e.to] = u;
+                    parentEdge[e.to] = id;
+                    if (!inQueue[e.to]) {
+                            q.push(e.to);
+                        inQueue[e.to] = true;
+                    }
+                }
+            }
+        }
+        
+        return dist[sink] != INT_MAX;
+    }
+    
+public:
+    MinCostMaxFlow(int n) : n(n), g(n) {}
+    
+    void addEdge(int from, int to, int cap, int cost) {
+            g[from].push_back((int)edges.size());
+        edges.push_back({to, cap, cost, 0});
+        g[to].push_back((int)edges.size());
+        edges.push_back({from, 0, -cost, 0});
+    }
+    
+    pair<int, int> minCostMaxFlow(int source, int sink) {
+            int flow = 0, cost = 0;
+        
+        while (spfa(source, sink)) {
+                int pushFlow = INT_MAX;
+            for (int v = sink; v != source; v = parent[v]) {
+                    pushFlow = min(pushFlow, edges[parentEdge[v]].cap - edges[parentEdge[v]].flow);
+            }
+            
+            for (int v = sink; v != source; v = parent[v]) {
+                    edges[parentEdge[v]].flow += pushFlow;
+                edges[parentEdge[v] ^ 1].flow -= pushFlow;
+            }
+            
+            flow += pushFlow;
+            cost += pushFlow * dist[sink];
+        }
+        
+        return {flow, cost};
+    }
+};
+
+int main() {
+        MinCostMaxFlow mcmf(4);
+    
+    mcmf.addEdge(0, 1, 1000, 1);
+    mcmf.addEdge(0, 2, 1000, 4);
+    mcmf.addEdge(1, 2, 1, 2);
+    mcmf.addEdge(1, 3, 1000, 8);
+    mcmf.addEdge(2, 3, 1000, 1);
+    
+    auto [maxFlow, minCost] = mcmf.minCostMaxFlow(0, 3);
+    
+    cout << "Max Flow: " << maxFlow << ", Min Cost: " << minCost << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(VE) per augmentation
+
+---
+
+### Hungarian Algorithm (Assignment Problem)
+
+**Problem:** Assign n workers to n tasks minimizing total cost.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+const int INF = 1e9;
+
+class Hungarian {
+    private:
+    vector<vector<int>> cost;
+    vector<int> u, v, p, way;
+    int n;
+    
+public:
+    Hungarian(vector<vector<int>>& costMatrix) : cost(costMatrix), n(costMatrix.size()) {
+            u.assign(n + 1, 0);
+        v.assign(n + 1, 0);
+        p.assign(n + 1, 0);
+        way.assign(n + 1, 0);
+    }
+    
+    int solve() {
+            for (int i = 1; i <= n; ++i) {
+                p[0] = i;
+            int j0 = 0;
+            vector<int> minv(n + 1, INF);
+            vector<bool> used(n + 1, false);
+            
+            do {
+                    used[j0] = true;
+                int i0 = p[j0], delta = INF, j1;
+                
+                for (int j = 1; j <= n; ++j) {
+                        if (!used[j]) {
+                            int cur = cost[i0 - 1][j - 1] - u[i0] - v[j];
+                        if (cur < minv[j]) {
+                                minv[j] = cur, way[j] = j0;
+                        }
+                        if (minv[j] < delta) {
+                                delta = minv[j], j1 = j;
+                        }
+                    }
+                }
+                
+                for (int j = 0; j <= n; ++j) {
+                        if (used[j]) {
+                            u[p[j]] += delta, v[j] -= delta;
+                    } else {
+                            minv[j] -= delta;
+                    }
+                }
+                
+                j0 = j1;
+            } while (p[j0] != 0);
+            
+            do {
+                    int j1 = way[j0];
+                p[j0] = p[j1];
+                j0 = j1;
+            } while (j0);
+        }
+        
+        vector<int> assignment(n + 1);
+        for (int j = 1; j <= n; ++j) {
+                assignment[p[j]] = j;
+        }
+        
+        int result = -v[0];
+        return result;
+    }
+};
+
+int main() {
+        vector<vector<int>> cost = {
+            {4, 1, 3},
+        {2, 0, 5},
+        {3, 2, 2}
+    };
+    
+    Hungarian hungarian(cost);
+    cout << "Minimum assignment cost: " << hungarian.solve() << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n³)
+
+---
+
+### Eulerian Path / Circuit
+
+**Definition:** Path that visits every edge exactly once.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <stack>
+
+using namespace std;
+
+class EulerianPath {
+    private:
+    vector<vector<int>> graph;
+    vector<int> degree;
+    stack<int> st;
+    vector<int> path;
+    
+    void dfs(int u) {
+            while (!graph[u].empty()) {
+                int v = graph[u].back();
+            graph[u].pop_back();
+            dfs(v);
+        }
+        path.push_back(u);
+    }
+    
+public:
+    EulerianPath(int n) : graph(n), degree(n, 0) {}
+    
+    void addEdge(int u, int v) {
+            graph[u].push_back(v);
+        graph[v].push_back(u);
+        degree[u]++;
+        degree[v]++;
+    }
+    
+    vector<int> findEulerianPath() {
+            int oddDegreeCount = 0, startVertex = 0;
+        
+        for (int i = 0; i < (int)degree.size(); i++) {
+                if (degree[i] % 2 == 1) {
+                    oddDegreeCount++;
+                startVertex = i;
+            }
+        }
+        
+        if (oddDegreeCount != 0 && oddDegreeCount != 2) {
+                cout << "Eulerian path doesn't exist" << endl;
+            return {};
+        }
+        
+        dfs(startVertex);
+        reverse(path.begin(), path.end());
+        return path;
+    }
+};
+
+int main() {
+        EulerianPath ep(5);
+    
+    ep.addEdge(0, 1);
+    ep.addEdge(1, 2);
+    ep.addEdge(2, 3);
+    ep.addEdge(3, 4);
+    ep.addEdge(4, 1);
+    
+    vector<int> path = ep.findEulerianPath();
+    
+    cout << "Eulerian Path: ";
+    for (int v : path) {
+            cout << v << " ";
+    }
+    cout << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(V + E)
+
+---
+
+### Articulation Points (Cut Vertices)
+
+**Definition:** Vertices whose removal increases connected components.
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+class ArticulationPoints {
+    private:
+    vector<vector<int>> graph;
+    vector<bool> visited;
+    vector<int> disc, low;
+    vector<bool> isArticulation;
+    int timer;
+    
+    void dfs(int u, int parent) {
+            visited[u] = true;
+        disc[u] = low[u] = timer++;
+        int children = 0;
+        
+        for (int v : graph[u]) {
+                if (v == parent) continue;
+            
+            if (visited[v]) {
+                    low[u] = min(low[u], disc[v]);
+            } else {
+                    children++;
+                dfs(v, u);
+                low[u] = min(low[u], low[v]);
+                
+                if (parent == -1 && children > 1) {
+                        isArticulation[u] = true;
+                } else if (parent != -1 && low[v] >= disc[u]) {
+                        isArticulation[u] = true;
+                }
+            }
+        }
+    }
+    
+public:
+    ArticulationPoints(int n) : graph(n), visited(n, false), disc(n), 
+                                low(n), isArticulation(n, false), timer(0) {}
+    
+    void addEdge(int u, int v) {
+            graph[u].push_back(v);
+        graph[v].push_back(u);
+    }
+    
+    vector<int> findArticulationPoints() {
+            for (int i = 0; i < (int)graph.size(); i++) {
+                if (!visited[i]) {
+                    dfs(i, -1);
+            }
+        }
+        
+        vector<int> result;
+        for (int i = 0; i < (int)isArticulation.size(); i++) {
+                if (isArticulation[i]) {
+                    result.push_back(i);
+            }
+        }
+        
+        return result;
+    }
+};
+
+int main() {
+        ArticulationPoints ap(5);
+    
+    ap.addEdge(0, 1);
+    ap.addEdge(0, 2);
+    ap.addEdge(1, 3);
+    ap.addEdge(2, 3);
+    ap.addEdge(1, 4);
+    
+    auto articulationPoints = ap.findArticulationPoints();
+    
+    cout << "Articulation Points: ";
+    for (int v : articulationPoints) {
+            cout << v << " ";
+    }
+    cout << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(V + E)
+
+---
+
+### Biconnected Components
+
+**Definition:** Maximal subgraphs with no cut vertices.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <stack>
+
+using namespace std;
+
+class BiconnectedComponents {
+    private:
+    vector<vector<pair<int, int>>> graph;
+    vector<bool> visited;
+    vector<int> disc, low;
+    stack<int> st;
+    vector<vector<int>> components;
+    int timer;
+    
+    void dfs(int u, int parent = -1) {
+            visited[u] = true;
+        disc[u] = low[u] = timer++;
+        int children = 0;
+        
+        for (auto [v, edgeId] : graph[u]) {
+                if (!visited[v]) {
+                    children++;
+                st.push(edgeId);
+                dfs(v, u);
+                low[u] = min(low[u], low[v]);
+                
+                if ((parent == -1 && children > 1) || (parent != -1 && low[v] >= disc[u])) {
+                        vector<int> component;
+                    while (!st.empty()) {
+                            component.push_back(st.top());
+                        st.pop();
+                    }
+                    components.push_back(component);
+                }
+            } else if (v != parent) {
+                    low[u] = min(low[u], disc[v]);
+                if (disc[v] < disc[u]) {
+                        st.push(edgeId);
+                }
+            }
+        }
+    }
+    
+public:
+    BiconnectedComponents(int n) : graph(n), visited(n, false), 
+                                   disc(n), low(n), timer(0) {}
+    
+    void addEdge(int u, int v, int edgeId) {
+            graph[u].push_back({v, edgeId});
+        graph[v].push_back({u, edgeId});
+    }
+    
+    vector<vector<int>> findComponents() {
+            for (int i = 0; i < (int)graph.size(); i++) {
+                if (!visited[i]) {
+                    dfs(i);
+                if (!st.empty()) {
+                        vector<int> component;
+                    while (!st.empty()) {
+                            component.push_back(st.top());
+                        st.pop();
+                    }
+                    components.push_back(component);
+                }
+            }
+        }
+        
+        return components;
+    }
+};
+
+int main() {
+        BiconnectedComponents bcc(5);
+    
+    bcc.addEdge(0, 1, 0);
+    bcc.addEdge(0, 2, 1);
+    bcc.addEdge(1, 3, 2);
+    bcc.addEdge(2, 3, 3);
+    bcc.addEdge(3, 4, 4);
+    
+    auto components = bcc.findComponents();
+    
+    cout << "Biconnected Components:" << endl;
+    for (auto& comp : components) {
+            cout << "Component: ";
+        for (int edge : comp) {
+                cout << edge << " ";
+        }
+        cout << endl;
+    }
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(V + E)
+
+---
+
+## 3. Advanced DP
+
+### DP with Bitsets
+
+**Optimization:** Use bitsets for O(n³/64) instead of O(n³).
+
+```cpp
+#include <iostream>
+#include <bitset>
+#include <vector>
+
+using namespace std;
+
+const int MAXN = 100;
+
+int main() {
+        int n = 10, m = 15;
+    
+    // DP table: dp[i][j] = bitset of reachable vertices from (i,j)
+    vector<vector<bitset<MAXN>>> dp(n, vector<bitset<MAXN>>(n));
+    
+    // Example: Reachable cells in grid
+    dp[0][0][0] = 1;
+    
+    for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                if (i + 1 < n) dp[i+1][j] |= dp[i][j];
+            if (j + 1 < n) dp[i][j+1] |= dp[i][j];
+        }
+    }
+    
+    cout << "Bitset DP - reachable cells: " << dp[n-1][n-1].count() << endl;
+    
+    return 0;
+}
+```
+
+**Benefit:** 64x speedup for bitmask operations
+
+---
+
+### DP with Convex Hull Trick (CHT)
+
+**Problem:** Minimize/maximize linear functions dynamically.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <deque>
+
+using namespace std;
+
+struct Line {
+        long long m, c; // y = mx + c
+    long long eval(long long x) {
+            return m * x + c;
+    }
+    
+    double intersectX(Line& other) {
+            return (double)(other.c - c) / (m - other.m);
+    }
+};
+
+class ConvexHullTrick {
+    private:
+    deque<Line> lines;
+    
+public:
+    void addLine(long long m, long long c) {
+            Line newLine = {m, c};
+        
+        while (lines.size() >= 1 && lines.back().m == m) {
+                if (lines.back().c <= c) return;
+            lines.pop_back();
+        }
+        
+        while (lines.size() >= 2) {
+                Line last = lines.back();
+            lines.pop_back();
+            Line prevLast = lines.back();
+            
+            if (prevLast.intersectX(newLine) <= prevLast.intersectX(last)) {
+                    lines.push_back(last);
+                break;
+            }
+        }
+        
+        lines.push_back(newLine);
+    }
+    
+    long long queryMax(long long x) {
+            while (lines.size() >= 2 && lines[0].eval(x) <= lines[1].eval(x)) {
+                lines.pop_front();
+        }
+        return lines.front().eval(x);
+    }
+};
+
+int main() {
+        ConvexHullTrick cht;
+    
+    cht.addLine(2, 5);  // y = 2x + 5
+    cht.addLine(3, 7);  // y = 3x + 7
+    cht.addLine(1, 10); // y = x + 10
+    
+    cout << "Max at x=5: " << cht.queryMax(5) << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n + q) for n lines and q queries
+
+---
+
+### Knuth Optimization
+
+**For:** Range DP problems with special monotonicity properties.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+int main() {
+        int n = 5;
+    vector<int> arr = {1, 5, 3, 2, 4};
+    
+    // Knuth optimization for optimal BST/concatenation
+    vector<vector<int>> dp(n, vector<int>(n, INT_MAX));
+    vector<vector<int>> split(n, vector<int>(n));
+    
+    // Base case
+    for (int i = 0; i < n; i++) {
+            dp[i][i] = arr[i];
+        split[i][i] = i;
+    }
+    
+    // Fill DP table using Knuth optimization
+    for (int len = 2; len <= n; len++) {
+            for (int i = 0; i <= n - len; i++) {
+                int j = i + len - 1;
+            int sum = 0;
+            for (int k = i; k <= j; k++) sum += arr[k];
+            
+            // Only check split points in a range
+            int left = (len == 2) ? i : split[i][j-1];
+            int right = (len == n) ? j : split[i+1][j];
+            
+            for (int k = left; k <= right; k++) {
+                    int cost = dp[i][k] + dp[k+1][j] + sum;
+                if (cost < dp[i][j]) {
+                        dp[i][j] = cost;
+                    split[i][j] = k;
+                }
+            }
+        }
+    }
+    
+    cout << "Optimal cost: " << dp[0][n-1] << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n²) instead of O(n³)
+
+---
+
+### Divide & Conquer Optimization
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <climits>
+
+using namespace std;
+
+int cost(int i, int j, vector<int>& arr) {
+        if (i > j) return 0;
+    int sum = 0;
+    for (int k = i; k <= j; k++) sum += arr[k];
+    return sum * sum;
+}
+
+void solve(int l, int r, int optL, int optR, vector<int>& arr, 
+           vector<vector<long long>>& dp) {
+        if (l > r) return;
+    
+    int mid = (l + r) / 2;
+    int bestK = optL;
+    long long bestVal = LLONG_MAX;
+    
+    for (int k = optL; k <= min(mid, optR); k++) {
+            long long val = (mid > 0 ? dp[mid-1][k] : 0) + cost(k+1, mid, arr);
+        if (val < bestVal) {
+                bestVal = val;
+            bestK = k;
+        }
+    }
+    
+    dp[mid][mid] = bestVal;
+    
+    solve(l, mid-1, optL, bestK, arr, dp);
+    solve(mid+1, r, bestK, optR, arr, dp);
+}
+
+int main() {
+        int n = 5;
+    vector<int> arr = {1, 5, 3, 2, 4};
+    vector<vector<long long>> dp(n, vector<long long>(n, 0));
+    
+    solve(0, n-1, -1, n-1, arr, dp);
+    
+    cout << "Result: " << dp[n-1][n-1] << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n log n)
+
+---
+
+### SOS DP (Sum Over Subsets)
+
+**Problem:** For each mask, find sum of all submasks.
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+        int n = 3; // 2^3 = 8 masks
+    vector<long long> a(1 << n);
+    vector<long long> dp(1 << n);
+    
+    // Initialize array
+    for (int i = 0; i < (1 << n); i++) {
+            a[i] = i + 1; // Example values
+    }
+    
+    // SOS DP
+    for (int i = 0; i < n; i++) {
+            for (int mask = 0; mask < (1 << n); mask++) {
+                if (mask & (1 << i)) {
+                    dp[mask] += dp[mask ^ (1 << i)];
+            }
+        }
+    }
+    
+    // Actually compute submask sums
+    for (int mask = 0; mask < (1 << n); mask++) {
+            dp[mask] = 0;
+        for (int sub = mask; ; sub = (sub - 1) & mask) {
+                dp[mask] += a[sub];
+            if (sub == 0) break;
+        }
+    }
+    
+    cout << "Sum of submasks of 5: " << dp[5] << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n * 2^n)
+
+---
+
+### DP on Bitmasks (General Forms)
+
+**Beyond TSP:** Profile DP, game theory, grid DP.
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cstring>
+
+using namespace std;
+
+int n, m;
+vector<vector<int>> grid;
+vector<int> dp[1 << 20];
+
+int solve(int row, int mask) {
+        if (row == n) {
+            return mask == 0 ? 0 : -1e9;
+    }
+    
+    if (dp[row][mask] != -1) {
+            return dp[row][mask];
+    }
+    
+    int result = -1e9;
+    // Try all ways to fill current row
+    // (example: tiling, domino placement, etc.)
+    
+    return dp[row][mask] = result;
+}
+
+int main() {
+        // Initialize DP table
+    memset(dp, -1, sizeof(dp));
+    
+    cout << "Bitmask DP result: " << solve(0, 0) << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 4. Geometry Algorithms
+
+### Convex Hull (Graham Scan)
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+
+using namespace std;
+
+struct Point {
+        double x, y;
+};
+
+long long cross(Point O, Point A, Point B) {
+        return (long long)(A.x - O.x) * (B.y - O.y) - (long long)(A.y - O.y) * (B.x - O.x);
+}
+
+vector<Point> convexHull(vector<Point>& points) {
+        int n = points.size();
+    if (n <= 3) return points;
+    
+    // Find lowest point
+    int minIdx = 0;
+    for (int i = 1; i < n; i++) {
+            if (points[i].y < points[minIdx].y || 
+            (points[i].y == points[minIdx].y && points[i].x < points[minIdx].x)) {
+                minIdx = i;
+        }
+    }
+    swap(points[0], points[minIdx]);
+    
+    Point pivot = points[0];
+    
+    // Sort by polar angle
+    sort(points.begin() + 1, points.end(), [&](Point a, Point b) {
+            long long v = cross(pivot, a, b);
+        if (v == 0) {
+                double distA = (a.x - pivot.x) * (a.x - pivot.x) + (a.y - pivot.y) * (a.y - pivot.y);
+            double distB = (b.x - pivot.x) * (b.x - pivot.x) + (b.y - pivot.y) * (b.y - pivot.y);
+            return distA < distB;
+        }
+        return v > 0;
+    });
+    
+    vector<Point> hull;
+    for (int i = 0; i < n; i++) {
+            while (hull.size() > 1 && cross(hull[hull.size()-2], hull[hull.size()-1], points[i]) <= 0) {
+                hull.pop_back();
+        }
+        hull.push_back(points[i]);
+    }
+    
+    return hull;
+}
+
+int main() {
+        vector<Point> points = {{0, 0}, {1, 1}, {2, 2}, {0, 2}, {2, 0}};
+    auto hull = convexHull(points);
+    
+    cout << "Convex Hull:" << endl;
+    for (auto p : hull) {
+            cout << "(" << p.x << ", " << p.y << ")" << endl;
+    }
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n log n)
+
+---
+
+### Line Intersection & Orientation
+
+```cpp
+#include <iostream>
+#include <cmath>
+
+using namespace std;
+
+struct Point {
+        double x, y;
+};
+
+struct Line {
+        Point p1, p2;
+};
+
+enum Orientation { COLLINEAR = 0, CLOCKWISE = 1, COUNTERCLOCKWISE = 2 };
+
+Orientation findOrientation(Point p, Point q, Point r) {
+        double val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+    if (abs(val) < 1e-9) return COLLINEAR;
+    return (val > 0) ? CLOCKWISE : COUNTERCLOCKWISE;
+}
+
+bool onSegment(Point p, Point q, Point r) {
+        return q.x <= max(p.x, r.x) && q.x >= min(p.x, r.x) &&
+           q.y <= max(p.y, r.y) && q.y >= min(p.y, r.y);
+}
+
+bool doSegmentsIntersect(Line l1, Line l2) {
+        Orientation o1 = findOrientation(l1.p1, l1.p2, l2.p1);
+    Orientation o2 = findOrientation(l1.p1, l1.p2, l2.p2);
+    Orientation o3 = findOrientation(l2.p1, l2.p2, l1.p1);
+    Orientation o4 = findOrientation(l2.p1, l2.p2, l1.p2);
+    
+    if (o1 != o2 && o3 != o4) return true;
+    
+    if (o1 == COLLINEAR && onSegment(l1.p1, l2.p1, l1.p2)) return true;
+    if (o2 == COLLINEAR && onSegment(l1.p1, l2.p2, l1.p2)) return true;
+    if (o3 == COLLINEAR && onSegment(l2.p1, l1.p1, l2.p2)) return true;
+    if (o4 == COLLINEAR && onSegment(l2.p1, l1.p2, l2.p2)) return true;
+    
+    return false;
+}
+
+int main() {
+        Line l1 = {{0, 0}, {2, 2}};
+    Line l2 = {{0, 2}, {2, 0}};
+    
+    cout << "Segments intersect: " << (doSegmentsIntersect(l1, l2) ? "Yes" : "No") << endl;
+    
+    return 0;
+}
+```
+
+---
+
+### Closest Pair of Points
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <cmath>
+#include <climits>
+
+using namespace std;
+
+struct Point {
+        double x, y;
+};
+
+double dist(Point a, Point b) {
+        return sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
+}
+
+double bruteForce(vector<Point>& points, int l, int r) {
+        double minDist = 1e18;
+    for (int i = l; i <= r; i++) {
+            for (int j = i + 1; j <= r; j++) {
+                minDist = min(minDist, dist(points[i], points[j]));
+        }
+    }
+    return minDist;
+}
+
+double stripClosest(vector<Point>& strip, double d) {
+        sort(strip.begin(), strip.end(), [](Point a, Point b) { return a.y < b.y; });
+    double minDist = d;
+    for (int i = 0; i < (int)strip.size(); i++) {
+            for (int j = i + 1; j < (int)strip.size() && (strip[j].y - strip[i].y) < minDist; j++) {
+                minDist = min(minDist, dist(strip[i], strip[j]));
+        }
+    }
+    return minDist;
+}
+
+double closestUtil(vector<Point>& points, int l, int r) {
+        if (r - l <= 2) return bruteForce(points, l, r);
+    
+    int mid = (l + r) / 2;
+    double midX = points[mid].x;
+    
+    double d = min(closestUtil(points, l, mid), closestUtil(points, mid + 1, r));
+    
+    vector<Point> strip;
+    for (int i = l; i <= r; i++) {
+            if (abs(points[i].x - midX) < d) {
+                strip.push_back(points[i]);
+        }
+    }
+    
+    return min(d, stripClosest(strip, d));
+}
+
+double closestPair(vector<Point> points) {
+        sort(points.begin(), points.end(), [](Point a, Point b) { return a.x < b.x; });
+    return closestUtil(points, 0, (int)points.size() - 1);
+}
+
+int main() {
+        vector<Point> points = {{2, 3}, {12, 30}, {40, 50}, {5, 1}, {12, 10}, {3, 4}};
+    cout << "Closest pair distance: " << closestPair(points) << endl;
+    return 0;
+}
+```
+
+**Time Complexity:** O(n log n)
+
+---
+
+### Sweep Line Algorithms
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <set>
+
+using namespace std;
+
+struct Event {
+        int x, y1, y2, type; // type: 1 = start, -1 = end
+    bool operator<(const Event& other) const {
+            return x < other.x;
+    }
+};
+
+int maximalRectangle(vector<vector<int>>& matrix) {
+        if (matrix.empty()) return 0;
+    
+    int n = matrix.size(), m = matrix[0].size();
+    vector<int> heights(m, 0);
+    int maxArea = 0;
+    
+    for (int i = 0; i < n; i++) {
+            for (int j = 0; j < m; j++) {
+                heights[j] = matrix[i][j] == 0 ? 0 : heights[j] + 1;
+        }
+        // Apply largest rectangle in histogram
+    }
+    
+    return maxArea;
+}
+
+int main() {
+        vector<vector<int>> matrix = {{1, 0, 1}, {1, 1, 1}, {1, 1, 1}};
+    cout << "Max rectangle: " << maximalRectangle(matrix) << endl;
+    return 0;
+}
+```
+
+---
+
+### Polygon Area
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cmath>
+
+using namespace std;
+
+struct Point {
+        double x, y;
+};
+
+double polygonArea(vector<Point>& polygon) {
+        double area = 0;
+    int n = polygon.size();
+    
+    for (int i = 0; i < n; i++) {
+            int j = (i + 1) % n;
+        area += polygon[i].x * polygon[j].y;
+        area -= polygon[j].x * polygon[i].y;
+    }
+    
+    return abs(area) / 2.0;
+}
+
+int main() {
+        vector<Point> triangle = {{0, 0}, {4, 0}, {0, 3}};
+    cout << "Triangle area: " << polygonArea(triangle) << endl;
+    return 0;
+}
+```
+
+---
+
+## 5. Probability / Randomized Algorithms
+
+### Randomized QuickSort
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <random>
+#include <algorithm>
+
+using namespace std;
+
+int randomPartition(vector<int>& arr, int low, int high) {
+        random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(low, high);
+    
+    int randomIdx = dis(gen);
+    swap(arr[randomIdx], arr[high]);
+    
+    int pivot = arr[high];
+    int i = low - 1;
+    
+    for (int j = low; j < high; j++) {
+            if (arr[j] < pivot) {
+                i++;
+            swap(arr[i], arr[j]);
+        }
+    }
+    
+    swap(arr[i + 1], arr[high]);
+    return i + 1;
+}
+
+void randomizedQuickSort(vector<int>& arr, int low, int high) {
+        if (low < high) {
+            int pi = randomPartition(arr, low, high);
+        randomizedQuickSort(arr, low, pi - 1);
+        randomizedQuickSort(arr, pi + 1, high);
+    }
+}
+
+int main() {
+        vector<int> arr = {5, 2, 8, 1, 9, 3, 7};
+    randomizedQuickSort(arr, 0, arr.size() - 1);
+    
+    for (int x : arr) cout << x << " ";
+    cout << endl;
+    
+    return 0;
+}
+```
+
+**Expected Time:** O(n log n)
+
+---
+
+### Reservoir Sampling
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <random>
+#include <cmath>
+
+using namespace std;
+
+vector<int> reservoirSampling(int k) {
+        vector<int> reservoir(k);
+    random_device rd;
+    mt19937 gen(rd());
+    
+    // Read first k elements
+    for (int i = 0; i < k; i++) {
+            reservoir[i] = i + 1; // Simulated stream
+    }
+    
+    int n = k;
+    for (int i = k; i < 100; i++) { // Simulated stream of 100 elements
+        int j = uniform_int_distribution<>(0, i)(gen);
+        if (j < k) {
+                reservoir[j] = i + 1;
+        }
+        n++;
+    }
+    
+    return reservoir;
+}
+
+int main() {
+        auto sample = reservoirSampling(5);
+    
+    cout << "Reservoir sample: ";
+    for (int x : sample) cout << x << " ";
+    cout << endl;
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n)
+
+---
+
+### Monte Carlo vs Las Vegas
+
+```cpp
+#include <iostream>
+#include <random>
+#include <vector>
+
+using namespace std;
+
+// Monte Carlo: May give wrong answer, but runs fast
+bool monteCarloPrimalityTest(long long n, int iterations = 5) {
+        if (n < 2) return false;
+    if (n == 2 || n == 3) return true;
+    if (n % 2 == 0) return false;
+    
+    random_device rd;
+    mt19937 gen(rd());
+    uniform_int_distribution<> dis(2, n - 2);
+    
+    long long d = n - 1;
+    int r = 0;
+    while (d % 2 == 0) {
+            d /= 2;
+        r++;
+    }
+    
+    for (int i = 0; i < iterations; i++) {
+            long long a = dis(gen);
+        long long x = 1;
+        long long temp = d;
+        
+        while (temp--) x = (x * a) % n;
+        
+        if (x == 1 || x == n - 1) continue;
+        
+        bool composite = true;
+        for (int j = 0; j < r - 1; j++) {
+                x = (x * x) % n;
+            if (x == n - 1) {
+                    composite = false;
+                break;
+            }
+        }
+        
+        if (composite) return false; // Definitely composite
+    }
+    
+    return true; // Probably prime
+}
+
+// Las Vegas: Always correct, but may take variable time
+bool lasVegasPrimalityTest(long long n) {
+        // Deterministic primality test
+    if (n < 2) return false;
+    if (n == 2) return true;
+    if (n % 2 == 0) return false;
+    
+    for (long long i = 3; i * i <= n; i += 2) {
+            if (n % i == 0) return false;
+    }
+    
+    return true;
+}
+
+int main() {
+        long long num = 1000000007;
+    
+    cout << "Monte Carlo: " << (monteCarloPrimalityTest(num) ? "Probably Prime" : "Composite") << endl;
+    cout << "Las Vegas: " << (lasVegasPrimalityTest(num) ? "Prime" : "Composite") << endl;
+    
+    return 0;
+}
+```
+
+---
+
+### Bloom Filters
+
+```cpp
+#include <iostream>
+#include <bitset>
+#include <vector>
+#include <functional>
+
+using namespace std;
+
+class BloomFilter {
+    private:
+    bitset<1000> bits;
+    vector<hash<string>> hashers;
+    
+public:
+    BloomFilter() {
+            for (int i = 0; i < 3; i++) {
+                hashers.push_back(hash<string>());
+        }
+    }
+    
+    void add(string item) {
+            for (int i = 0; i < (int)hashers.size(); i++) {
+                int idx = hashers[i](item) % 1000;
+            bits[idx] = 1;
+        }
+    }
+    
+    bool mightContain(string item) {
+            for (int i = 0; i < (int)hashers.size(); i++) {
+                int idx = hashers[i](item) % 1000;
+            if (!bits[idx]) return false;
+        }
+        return true;
+    }
+};
+
+int main() {
+        BloomFilter bf;
+    
+    bf.add("hello");
+    bf.add("world");
+    
+    cout << "'hello' might be in set: " << (bf.mightContain("hello") ? "Yes" : "No") << endl;
+    cout << "'bye' might be in set: " << (bf.mightContain("bye") ? "Yes" : "No") << endl;
+    
+    return 0;
+}
+```
+
+**Space:** O(m), **Time:** O(k) per operation (m = bits, k = hash functions)
+
+---
+
+## 6. Advanced Hashing
+
+###  Double Hashing
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+class DoubleHashTable {
+    private:
+    vector<int> table;
+    int tableSize;
+    
+    int hash1(int key) {
+            return key % tableSize;
+    }
+    
+    int hash2(int key) {
+            return 7 - (key % 7); // Must be coprime with tableSize
+    }
+    
+public:
+    DoubleHashTable(int size) : tableSize(size), table(size, -1) {}
+    
+    void insert(int key) {
+            int i = 0;
+        while (true) {
+                int idx = (hash1(key) + i * hash2(key)) % tableSize;
+            if (table[idx] == -1) {
+                    table[idx] = key;
+                return;
+            }
+            i++;
+        }
+    }
+    
+    bool search(int key) {
+            int i = 0;
+        while (true) {
+                int idx = (hash1(key) + i * hash2(key)) % tableSize;
+            if (table[idx] == -1) return false;
+            if (table[idx] == key) return true;
+            i++;
+        }
+    }
+};
+
+int main() {
+        DoubleHashTable dht(11);
+    
+    dht.insert(5);
+    dht.insert(16);
+    dht.insert(27);
+    
+    cout << "Search 16: " << (dht.search(16) ? "Found" : "Not found") << endl;
+    cout << "Search 20: " << (dht.search(20) ? "Found" : "Not found") << endl;
+    
+    return 0;
+}
+```
+
+---
+
+###  Polynomial Rolling Hash (Deep)
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+const long long BASE = 31;
+const long long MOD = 1e9 + 7;
+
+class RollingHash {
+    private:
+    string text;
+    vector<long long> hash_val, pow_base;
+    int n;
+    
+public:
+    RollingHash(string s) : text(s), n(s.length()) {
+            hash_val.assign(n + 1, 0);
+        pow_base.assign(n + 1, 1);
+        
+        for (int i = 0; i < n; i++) {
+                hash_val[i + 1] = (hash_val[i] * BASE + (text[i] - 'a' + 1)) % MOD;
+            pow_base[i + 1] = (pow_base[i] * BASE) % MOD;
+        }
+    }
+    
+    long long getHash(int l, int r) { // [l, r]
+        return (hash_val[r + 1] - hash_val[l] * pow_base[r - l + 1]) % MOD;
+    }
+    
+    bool compareSubstrings(int l1, int r1, int l2, int r2) {
+            if (r1 - l1 != r2 - l2) return false;
+        return getHash(l1, r1) == getHash(l2, r2);
+    }
+};
+
+int main() {
+        RollingHash rh("abcabc");
+    
+        cout << "Substring [0,2] == [3,5]: " 
+         << (rh.compareSubstrings(0, 2, 3, 5) ? "Yes" : "No") << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 7. Compression / Encoding
+
+###  Huffman Coding
+
+```cpp
+#include <iostream>
+#include <queue>
+#include <unordered_map>
+#include <string>
+
+using namespace std;
+
+struct Node {
+        char ch;
+    int freq;
+    Node* left;
+    Node* right;
+    
+    Node(char c, int f) : ch(c), freq(f), left(nullptr), right(nullptr) {}
+};
+
+struct Compare {
+        bool operator()(Node* a, Node* b) {
+            return a->freq > b->freq;
+    }
+};
+
+void huffmanCodes(Node* root, string code, unordered_map<char, string>& codes) {
+        if (!root) return;
+    
+    if (!root->left && !root->right) {
+            codes[root->ch] = code.empty() ? "0" : code;
+    }
+    
+    huffmanCodes(root->left, code + "0", codes);
+    huffmanCodes(root->right, code + "1", codes);
+}
+
+int main() {
+        unordered_map<char, int> freq = {{'a', 5}, {'b', 9}, {'c', 12}, {'d', 13}, {'e', 16}, {'f', 45}};
+    
+    priority_queue<Node*, vector<Node*>, Compare> pq;
+    
+    for (auto& p : freq) {
+            pq.push(new Node(p.first, p.second));
+    }
+    
+    while (pq.size() > 1) {
+            Node* left = pq.top(); pq.pop();
+        Node* right = pq.top(); pq.pop();
+        
+        Node* parent = new Node('0', left->freq + right->freq);
+        parent->left = left;
+        parent->right = right;
+        
+        pq.push(parent);
+    }
+    
+    Node* root = pq.top();
+    unordered_map<char, string> codes;
+    
+    huffmanCodes(root, "", codes);
+    
+    cout << "Huffman Codes:" << endl;
+    for (auto& p : codes) {
+            cout << p.first << ": " << p.second << endl;
+    }
+    
+    return 0;
+}
+```
+
+**Time Complexity:** O(n log n)
+
+---
+
+###  Run-Length Encoding
+
+```cpp
+#include <iostream>
+#include <string>
+
+using namespace std;
+
+string runLengthEncode(string s) {
+        string encoded;
+    int i = 0;
+    
+    while (i < (int)s.length()) {
+            int count = 1;
+        while (i + count < (int)s.length() && s[i] == s[i + count]) {
+                count++;
+        }
+        encoded += s[i];
+        encoded += to_string(count);
+        i += count;
+    }
+    
+    return encoded;
+}
+
+string runLengthDecode(string encoded) {
+        string decoded;
+    int i = 0;
+    
+    while (i < (int)encoded.length()) {
+            char ch = encoded[i++];
+        int count = 0;
+        
+        while (i < (int)encoded.length() && isdigit(encoded[i])) {
+                count = count * 10 + (encoded[i++] - '0');
+        }
+        
+        for (int j = 0; j < count; j++) {
+                decoded += ch;
+        }
+    }
+    
+    return decoded;
+}
+
+int main() {
+        string original = "aaabbcccc";
+    string encoded = runLengthEncode(original);
+    string decoded = runLengthDecode(encoded);
+    
+    cout << "Original: " << original << endl;
+    cout << "Encoded: " << encoded << endl;
+    cout << "Decoded: " << decoded << endl;
+    
+    return 0;
+}
+```
+
+---
+
+## 8. Memory & Low-Level DSA Concepts
+
+###  Cache-Friendly Algorithms
+
+```cpp
+#include <iostream>
+#include <vector>
+#include <cstring>
+#include <chrono>
+
+using namespace std;
+
+// Cache-unfriendly: Column-major traversal
+void columnMajor(vector<vector<int>>& matrix) {
+        int rows = matrix.size();
+    int cols = matrix[0].size();
+    
+    for (int j = 0; j < cols; j++) {
+            for (int i = 0; i < rows; i++) {
+                matrix[i][j] *= 2; // Cache misses
+        }
+        }
+}
+
+// Cache-friendly: Row-major traversal
+void rowMajor(vector<vector<int>>& matrix) {
+        int rows = matrix.size();
+    int cols = matrix[0].size();
+    
+    for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols; j++) {
+                matrix[i][j] *= 2; // Cache hits
+        }
+    }
+}
+
+// Cache-friendly: Blocking
+void blockTraversal(vector<vector<int>>& matrix, int blockSize = 64) {
+        int rows = matrix.size();
+    int cols = matrix[0].size();
+    
+    for (int ii = 0; ii < rows; ii += blockSize) {
+            for (int jj = 0; jj < cols; jj += blockSize) {
+                for (int i = ii; i < min(ii + blockSize, rows); i++) {
+                    for (int j = jj; j < min(jj + blockSize, cols); j++) {
+                        matrix[i][j] *= 2;
+                }
+            }
+        }
+    }
+}
+
+int main() {
+        int size = 10000;
+    vector<vector<int>> matrix(size, vector<int>(size, 1));
+    
+    auto start = chrono::high_resolution_clock::now();
+    rowMajor(matrix);
+    auto end = chrono::high_resolution_clock::now();
+    
+    cout << "Time: " << chrono::duration_cast<chrono::milliseconds>(end - start).count() << "ms" << endl;
+    
+    return 0;
+}
+```
+
+**Key:** Exploit spatial/temporal locality
+
+---
+
+###  Amortized Analysis (Potential Method)
+
+```cpp
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+class AmortizedVector {
+    private:
+    int* data;
+    int size;
+    int capacity;
+    
+public:
+    AmortizedVector() : size(0), capacity(1) {
+            data = new int[capacity];
+    }
+    
+    void push(int value) {
+            if (size == capacity) {
+                int* newData = new int[capacity * 2];
+            for (int i = 0; i < size; i++) {
+                    newData[i] = data[i];
+            }
+            delete[] data;
+            data = newData;
+            capacity *= 2;
+        }
+        data[size++] = value;
+    }
+    
+    int getSize() { return size; }
+};
+
+int main() {
+        // Potential function: Phi = 2 * size - capacity
+    // Amortized cost of push: O(1)
+    // Actual cost varies: O(1) or O(n) when resizing
+    
+    AmortizedVector vec;
+    for (int i = 0; i < 1000000; i++) {
+            vec.push(i);
+    }
+    
+    cout << "Vector size: " << vec.getSize() << endl;
+    
+    return 0;
+}
+```
+
+---
+
+###  Custom Allocators (C++)
+
+```cpp
+#include <iostream>
+#include <memory>
+#include <vector>
+
+using namespace std;
+
+template <typename T>
+class PoolAllocator {
+    private:
+    static const int POOL_SIZE = 1000;
+    struct Block {
+            T data;
+        Block* next;
+    };
+    
+    Block* freeList;
+    vector<Block*> pools;
+    
+public:
+    PoolAllocator() : freeList(nullptr) {}
+    
+    T* allocate() {
+            if (freeList == nullptr) {
+                Block* newPool = new Block[POOL_SIZE];
+            pools.push_back(newPool);
+            
+            for (int i = 0; i < POOL_SIZE - 1; i++) {
+                    newPool[i].next = &newPool[i + 1];
+            }
+            newPool[POOL_SIZE - 1].next = nullptr;
+            freeList = newPool;
+        }
+        
+        Block* block = freeList;
+        freeList = freeList->next;
+        return &block->data;
+    }
+    
+    void deallocate(T* ptr) {
+            Block* block = reinterpret_cast<Block*>(ptr);
+        block->next = freeList;
+        freeList = block;
+    }
+    
+    ~PoolAllocator() {
+            for (auto pool : pools) {
+                delete[] pool;
+        }
+    }
+};
+
+int main() {
+        PoolAllocator<int> allocator;
+    
+    int* ptr1 = allocator.allocate();
+    int* ptr2 = allocator.allocate();
+    
+    *ptr1 = 42;
+    *ptr2 = 100;
+    
+    cout << "*ptr1 = " << *ptr1 << ", *ptr2 = " << *ptr2 << endl;
+    
+    allocator.deallocate(ptr1);
+    allocator.deallocate(ptr2);
+    
+    return 0;
+}
+```
+
+**Benefit:** Reduced fragmentation, faster allocation for repeated patterns
+
+---
+
+## Summary: Master Map
+
+These advanced topics form the complete DSA knowledge base:
+
+| Category | Key Algorithms | Complexity | Use Cases |
+|----------|-----------------|-----------|----------|
+| **Advanced Trees** | Splay, Treap, Cartesian, KD | O(log n) avg | Cache optimization, spatial queries |
+| **Advanced Graphs** | Johnson, MaxFlow, Hungarian | O(V²log V), O(VE²) | Network routing, assignments |
+| **Advanced DP** | CHT, SOS, Knuth Opt | O(n log n), O(n*2ⁿ) | Optimization, bitmask problems |
+| **Geometry** | Convex Hull, Line Intersection | O(n log n) | Graphics, collision detection |
+| **Randomized** | Quicksort, Reservoir, Bloom | O(n log n), O(1) | Probabilistic solutions |
+| **Encoding** | Huffman, RLE, LZW | O(n log n) | Data compression |
+| **Memory** | Cache-aware, Amortized | Varies | System optimization |
+
+---
+
+**Key Insight:** Master competitive programming by understanding not just algorithms, but their intricate details, edge cases, and optimizations. The rabbit hole goes deep—embrace the complexity!
+
+> "A person who never made a mistake never tried anything new." — Albert Einstein
+
+—✨ Keep coding, keep learning! ✨"
 
 ---
 End-of-File
