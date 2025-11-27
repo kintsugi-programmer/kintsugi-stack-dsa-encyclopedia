@@ -1,4 +1,4 @@
-# Data Structures and Algorithms in C++
+# kintsugi-stack-dsa-encyclopedia
 
 > “Talk is cheap. Show me the time complexity.”
 
@@ -9,7 +9,7 @@
 > Disclaimer: The content presented here is a curated blend of my personal learning journey, experiences, open-source documentation, and invaluable knowledge gained from diverse sources. I do not claim sole ownership over all the material; this is a community-driven effort to learn, share, and grow together.
 
 ## Table of Contents
-- [Data Structures and Algorithms in C++](#data-structures-and-algorithms-in-c)
+- [kintsugi-stack-dsa-encyclopedia](#kintsugi-stack-dsa-encyclopedia)
   - [Table of Contents](#table-of-contents)
 - [Basics to Intermediate Data Structures and Algorithms in C++](#basics-to-intermediate-data-structures-and-algorithms-in-c)
   - [Introduction](#introduction)
