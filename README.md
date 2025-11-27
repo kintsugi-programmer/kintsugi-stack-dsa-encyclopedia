@@ -231,8 +231,6 @@
 
 # Basics to Intermediate Data Structures and Algorithms in C++
 
----
-
 ## Introduction
 
 ### What is a Data Structure?
@@ -1685,7 +1683,6 @@ Remember: The best data structure/algorithm depends on your specific problem req
 
 # Advanced Data Structures and Algorithms in C++
 
----
 
 ## Hash Table / Unordered Map / Unordered Set
 
@@ -3677,8 +3674,6 @@ This comprehensive guide covers ~95% of interview DSA questions!
 ---
 
 # Expert DSA in C++
-
----
 
 ## 1. Advanced Graph Theory
 
@@ -10404,6 +10399,8 @@ int main() {
 
 End of Black Hole Mastery Compendium.
 
+---
+
 # DSA White Hole : towards end of complete algorithms encyclopedia
 
 Advanced Graph Algorithms
@@ -10554,6 +10551,7 @@ Advanced Flow Algorithms
   - Gap Relabel
   - Relabel-to-Front
 
+---
 
 # Note: Purpoes of Rabbit Hole, Black Hole, White Hole
 - DSA is ∞ 
